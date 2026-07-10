@@ -2841,7 +2841,7 @@ function addPhotos(input, secId){
   const tagSecId = (secId===undefined) ? null : secId;
   let pending=files.length;
   files.forEach(file=>{
-    if(!/^image\//.test(file.type)){ if(--pending<=0) renderPhotos(); return; }
+    if(!/^image\//.test(file.type)){ if(--pending<=0) renderTech(); return; }
     const rd=new FileReader();
     rd.onload=e=>{
       const img=new Image();
