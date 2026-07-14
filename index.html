@@ -1016,7 +1016,7 @@ const CATS={
     {key:'face_id_speedgate',lb:'Face ID SG'},{key:'boton_notouch',lb:'No Touch'}
   ],
   '🚗 Vehicular': [
-    {key:'isafe_vehicular',lb:'iSafe Veh'},{key:'safetouch_veh_curvo',lb:'ST Vehicular'},
+    {key:'isafe_vehicular',lb:'iSafe Veh'},{key:'safetouch_veh_curvo',lb:'Pilar'},
     {key:'camara_lpr',lb:'LPR Hikvision'},{key:'camara_lpr_quercus',lb:'LPR Quercus'},
     {key:'barrera_skidata',lb:'Barrera Skidata'},{key:'barrera_zkteco',lb:'Barrera ZKTeco'}
   ],
@@ -1041,6 +1041,7 @@ let sectors=[];
 let baseSector={id:0,name:'Base de Red',color:'#0891b2',items:{}};
 let sid=0;
 let activeSecId=null;   // null = ninguno, 0 = base, n = sector id
+let diagSectionBounds=[]; // {y,h} de cada sección del último diagrama generado — usado para paginar la impresión
 let activeCat=Object.keys(CATS)[0];
 let activeColorSid=null;
 let renameSid=null;
@@ -1218,6 +1219,7 @@ function renderSectorView(){
     const src=imgOf(key);
     const vv=keyVar(key);
     const tag = vv ? `<div style="font-size:9px;font-weight:800;color:${color};margin-top:3px;line-height:1.2;text-align:center">${variantShort(b,vv)}</div>` : '';
+    const plusOnclick = (vv && REPROMPT_ON_ADD.has(b)) ? `addItemToSector('${b}')` : `changeQty('${key}',1)`;
     return `<div class="eq-item" style="border-color:${color}40">
       <button class="eq-remove" onclick="removeItemFromSector('${key}')" title="Quitar">✕</button>
       <img src="${src}" alt="${baseLb}">
@@ -1225,7 +1227,7 @@ function renderSectorView(){
       <div class="eq-item-ctrl">
         <button class="qbtn" onclick="changeQty('${key}',-1)">−</button>
         <span class="qnum" style="color:${color}">${qty}</span>
-        <button class="qbtn" onclick="changeQty('${key}',1)">＋</button>
+        <button class="qbtn" onclick="${plusOnclick}">＋</button>
       </div>
     </div>`;
   }).join('');
@@ -1320,17 +1322,22 @@ function keyVar(k){ const p=(k||'').split(VSEP); return p.length>1?p.slice(1).jo
 function isVarKey(k){ return (k||'').indexOf(VSEP)>=0; }
 function mkKey(b,v){ return v?(b+VSEP+v):b; }
 const CARCASA_OPTS = ['Sin carcasa','Carcasa 3D Exterior','Carcasa 3D Interior','Carcasa Metálica Interior','Carcasa Metálica Exterior'];
-const PILAR_OPTS = ['Pilar Recto 1.20','Pilar Recto 1.50','Pilar Curvo 1.20','Pilar Curvo 1.50'];
+const PILAR_OPTS = ['Pilar Recto 1.20','Pilar Recto 1.50','Pilar Curvo 1.20','Pilar Curvo 1.50','Pilar Doble','Pilar Triple'];
+// Cantidad de Safetouch físicos que van montados en cada tipo de pilar vehicular
+const PILAR_ST_UNITS = {'Pilar Doble':2,'Pilar Triple':3};
+function stVehSafetouchUnits(variant){ return PILAR_ST_UNITS[variant]||1; }
 const VARIANT_DEFS = {
   'safetouch': { title:'Safetouch — Carcasa', sub:'Seleccioná el tipo de carcasa para este equipo.', opts:CARCASA_OPTS,
     short:{'Sin carcasa':'Sin carcasa','Carcasa 3D Exterior':'3D Ext','Carcasa 3D Interior':'3D Int','Carcasa Metálica Interior':'Met. Int','Carcasa Metálica Exterior':'Met. Ext'} },
-  'safetouch_veh_curvo': { title:'ST Vehicular — Pilar', sub:'Seleccioná el tipo de pilar.', opts:PILAR_OPTS,
-    short:{'Pilar Recto 1.20':'Recto 1.20','Pilar Recto 1.50':'Recto 1.50','Pilar Curvo 1.20':'Curvo 1.20','Pilar Curvo 1.50':'Curvo 1.50'} },
+  'safetouch_veh_curvo': { title:'Pilar — Tipo', sub:'Seleccioná el tipo de pilar.', opts:PILAR_OPTS,
+    short:{'Pilar Recto 1.20':'Recto 1.20','Pilar Recto 1.50':'Recto 1.50','Pilar Curvo 1.20':'Curvo 1.20','Pilar Curvo 1.50':'Curvo 1.50','Pilar Doble':'Doble (2 ST)','Pilar Triple':'Triple (3 ST)'} },
   'speedgate': { title:'Speedgate Simple — Modelo', sub:'Seleccioná el modelo del Speedgate.', opts:['DS212','DS7100'], short:{} },
   'speedgate_doble': { title:'Speedgate Doble — Modelo', sub:'Seleccioná el modelo del Speedgate.', opts:['DS212','DS7100'], short:{} },
   'barrera_zkteco': { title:'Barrera ZKTeco — Modelo', sub:'Seleccioná el modelo de la barrera.', opts:['3.0 L','3.0 R','4.5 L','4.5 R','6.0 L','6.0 R','Articulada L','Articulada R'], short:{} },
   'barrera_skidata': { title:'Barrera Skidata — Modelo', sub:'Seleccioná el modelo de la barrera.', opts:['3.0 N','3.0 GB','3.6 N','3.6 GB','6.0 N','6.0 GB','Articulada N','Articulada GB'], short:{} }
 };
+// Equipos cuyo botón "＋" vuelve a preguntar el tipo (en vez de sumar directo el mismo tipo ya elegido)
+const REPROMPT_ON_ADD = new Set(['safetouch_veh_curvo']);
 function isVariantEq(key){ return !!VARIANT_DEFS[baseKey(key)]; }
 function variantShort(baseK,v){ const d=VARIANT_DEFS[baseK]; return (d&&d.short&&d.short[v])||v; }
 function lbOf(k){ const b=baseKey(k); const base=(ALL.find(l=>l.key===b)||{}).lb||b; const v=keyVar(k); return v?(base+' · '+variantShort(b,v)):base; }
@@ -1422,6 +1429,12 @@ function pruneSgConfigs(){
   return false;
 }
 
+function stVehSafetouchTotal(){
+  let tot=0;
+  const cnt=its=>Object.entries(its||{}).forEach(([k,q])=>{ if(q>0 && baseKey(k)==='safetouch_veh_curvo') tot+=q*stVehSafetouchUnits(keyVar(k)); });
+  cnt(baseSector.items); sectors.forEach(s=>cnt(s.items));
+  return tot;
+}
 function updEquipSummary(){
   const host=document.getElementById('equipSummary'); if(!host) return;
   const agg={};
@@ -1431,6 +1444,8 @@ function updEquipSummary(){
   if(!entries.length){ host.innerHTML='<div style="font-size:10px;color:var(--mt);font-style:italic">Sin equipos cargados</div>'; return; }
   let total=0;
   let rows=entries.map(([k,q])=>{ total+=q; const lb=lbOf(k); return '<div class="sw-row"><span>'+lb+'</span><span class="sw-val">'+q+'</span></div>'; }).join('');
+  const stVeh=stVehSafetouchTotal();
+  if(stVeh>0){ total+=stVeh; rows+='<div class="sw-row"><span>Safetouch (en Pilar)</span><span class="sw-val">'+stVeh+'</span></div>'; }
   rows+='<div class="sw-row"><span>Total equipos</span><span class="sw-val">'+total+'</span></div>';
   host.innerHTML=rows;
 }
@@ -1512,6 +1527,7 @@ function generateDiagram(){
     curY += s.h + SEC_GAP_Y;
   });
   const svgH = Math.max(600, curY + 20);
+  diagSectionBounds = allSections.map(s=>({y:s.y, h:s.h}));
 
   // ── Node positions ──────────────────────────────────────────────────────
   function nodePos(sec){
@@ -1764,6 +1780,42 @@ function scaleSvgForPrint(svg, maxW, maxH){
   clone.removeAttribute('style');
   return clone.outerHTML;
 }
+// Divide un SVG alto (muchos sectores apilados) en varias "hojas" verticales, cada una
+// escalada solo por ancho (no por alto), para que el texto no se achique en diagramas largos.
+// Usa diagSectionBounds (cargado por generateDiagram) para no cortar un sector a la mitad.
+function buildDiagramPages(svg, maxW, maxHPerPage){
+  const svgW=parseFloat(svg.getAttribute('width'))||1;
+  const svgH=parseFloat(svg.getAttribute('height'))||1;
+  const scale=Math.min(maxW/svgW, 1);
+  const pageH=maxHPerPage/scale; // unidades del SVG que entran por hoja a esta escala
+  const bounds=Array.isArray(diagSectionBounds)?diagSectionBounds:[];
+  const slices=[];
+  if(svgH<=pageH || !bounds.length){
+    slices.push({y:0,h:svgH});
+  } else {
+    let pageStart=0, cursor=0;
+    while(cursor<bounds.length){
+      let lastFit=cursor;
+      for(let i=cursor;i<bounds.length;i++){
+        const secBottom=bounds[i].y+bounds[i].h;
+        if(secBottom-pageStart<=pageH || i===cursor) lastFit=i; else break;
+      }
+      const pageEnd=Math.min(svgH, bounds[lastFit].y+bounds[lastFit].h+20);
+      slices.push({y:pageStart, h:pageEnd-pageStart});
+      cursor=lastFit+1;
+      pageStart=cursor<bounds.length ? Math.max(0, bounds[cursor].y-20) : svgH;
+    }
+  }
+  return slices.map(sl=>{
+    const clone=svg.cloneNode(true);
+    clone.setAttribute('viewBox', '0 '+sl.y+' '+svgW+' '+sl.h);
+    clone.setAttribute('width', Math.round(svgW*scale));
+    clone.setAttribute('height', Math.round(sl.h*scale));
+    clone.setAttribute('preserveAspectRatio','xMidYMid meet');
+    clone.removeAttribute('style');
+    return clone.outerHTML;
+  });
+}
 function buildDiagramPrint(){
   const rec=(document.getElementById('p_rec')||{}).value||'';
   const svg=document.getElementById('diagSvg');
@@ -1771,14 +1823,17 @@ function buildDiagramPrint(){
   const land = w>=h; // horizontal si es más ancho que alto
   // área imprimible aprox a 96dpi con 8mm de margen
   const maxW = land?1080:740, maxH = land?700:1020;
-  const scaled=scaleSvgForPrint(svg, maxW, maxH);
+  const pages=buildDiagramPages(svg, maxW, maxH);
   const css='<style>@page{size:A4 '+(land?'landscape':'portrait')+';margin:8mm}'
     +'#printRoot{font-family:Arial,Helvetica,sans-serif;color:#1e293b;text-align:center}'
     +'#printRoot .dgh{font-size:16px;font-weight:800;color:#1d4ed8;margin-bottom:10px;text-align:left}'
     +'#printRoot .dgbox{width:100%}'
     +'#printRoot .dgbox svg{max-width:100%;height:auto}'
+    +'#printRoot .dgpage{page-break-after:always}'
+    +'#printRoot .dgpage:last-child{page-break-after:auto}'
     +'</style>';
-  return css+'<div class="dgh">'+_pesc(rec||'Diagrama de Red')+' — Diagrama de Red</div><div class="dgbox">'+scaled+'</div>';
+  const body=pages.map((html,i)=>'<div class="dgpage"><div class="dgh">'+_pesc(rec||'Diagrama de Red')+' — Diagrama de Red'+(pages.length>1?(' (Parte '+(i+1)+'/'+pages.length+')'):'')+'</div><div class="dgbox">'+html+'</div></div>').join('');
+  return css+body;
 }
 function exportDiagramPDF(){
   const svg=document.getElementById('diagSvg');
@@ -2179,7 +2234,7 @@ function saveProject(){
     if(on.length) toggles[g.id]=on;
   });
   const data={ _safecard:1, savedAt:new Date().toISOString(), fields, toggles,
-    state:{ baseSector, sectors, sid, activeSecId, tech, equipUbic, equipPos, sgConfigs, sgUid, matrizDetalle, usabMatrix, usabNA, projectPhotos } };
+    state:{ baseSector, sectors, sid, activeSecId, tech, equipUbic, equipPos, sgConfigs, sgUid, matrizDetalle, usabMatrix, usabNA, projectPhotos, sectorPhotoNotes } };
   const blob=new Blob([JSON.stringify(data)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
   const nm=((typeof v==='function'?v('p_rec'):'')||'proyecto').replace(/[^a-z0-9]+/gi,'_').slice(0,40)||'proyecto';
@@ -2219,6 +2274,7 @@ function loadProject(file){
     usabMatrix = st.usabMatrix || {};
     usabNA = st.usabNA || {};
     projectPhotos = Array.isArray(st.projectPhotos)?st.projectPhotos:[];
+    sectorPhotoNotes = st.sectorPhotoNotes || {};
     // migración: saves antiguos guardaban variantes aparte (variantInfo / safetouchCarc) → ahora son ítems independientes (clave base|variante)
     (function(){
       const vi = st.variantInfo || (st.safetouchCarc ? {safetouch: st.safetouchCarc} : null);
@@ -2310,7 +2366,7 @@ function clearAll(){
   sectors=[];sid=0;activeSecId=null;
   baseSector={id:0,name:'Base de Red',color:'#0891b2',items:{}};
   tech={ utp:'', fibra:'', emt:'', emtMed:'', pvc:'', pvcMed:'', servPos:'', servOtro:'', notas:'', oocc:'' }; equipUbic={}; equipPos={};
-  sgConfigs=[]; sgUid=0; matrizDetalle={}; usabMatrix={}; usabNA={}; projectPhotos=[];
+  sgConfigs=[]; sgUid=0; matrizDetalle={}; usabMatrix={}; usabNA={}; projectPhotos=[]; sectorPhotoNotes={};
   renderSectors();renderLib();renderSectorView();updSwCalc();upProg();renderTech();
   if(typeof renderMatrix==='function') renderMatrix();
   const svg=document.getElementById('diagSvg');
@@ -2835,6 +2891,7 @@ let tech = { utp:'', fibra:'', emt:'', emtMed:'', pvc:'', pvcMed:'', servPos:'',
 let equipUbic = {};
 let equipPos = {};
 let projectPhotos = [];
+let sectorPhotoNotes = {}; // detalle/observaciones por sector (secId -> texto), se muestra bajo la foto de cada sector
 // ══ FOTOS DEL LEVANTAMIENTO ═══════════════════════════════════════════════
 function addPhotos(input, secId){
   const files=[...(input.files||[])]; if(!files.length) return;
@@ -2887,6 +2944,11 @@ function sectorPhotosMiniHtml(secId){
       '<img src="'+p.data+'" style="width:100%;height:100%;object-fit:cover;display:block">'+
       '<button onclick="photoDel('+i+')" title="Eliminar" style="position:absolute;top:1px;right:1px;background:rgba(239,68,68,.92);border:none;color:#fff;width:16px;height:16px;border-radius:4px;cursor:pointer;font-size:10px;line-height:1;padding:0">✕</button></div>'; }).join('')+
   '</div>';
+}
+function setSectorPhotoNote(secId,val){ sectorPhotoNotes[secId]=val; }
+function sectorDetailHtml(secId){
+  const val=sgEsc(sectorPhotoNotes[secId]||'');
+  return '<textarea placeholder="Detalle / observaciones de este sector (opcional)" oninput="setSectorPhotoNote('+JSON.stringify(secId)+',this.value)" style="width:100%;box-sizing:border-box;resize:vertical;min-height:50px;line-height:1.4;background:var(--in);border:1px solid var(--bd);color:var(--tx);padding:6px 9px;border-radius:6px;font-size:11px;font-family:inherit;outline:none;margin:2px 0 10px">'+val+'</textarea>';
 }
 function renderPhotos(){
   const host=document.getElementById('photoGrid'); if(!host) return;
@@ -2992,7 +3054,7 @@ function renderTech(){
   let html='';
   html+=lbl('🖧 Base de Red — ubicación', base.length?applyAllHtml('techApplyBase(this.value)'):'');
   html+= base.length ? base.map(e=>techRow(e.lb+' ×'+e.qty,'',locSelectHtml(equipUbic[e.key]||'','ubic',e.key))).join('') : none('Sin equipos de infraestructura cargados.');
-  if(base.length){ html+=photoUploadBtnHtml(0,true)+sectorPhotosMiniHtml(0); }
+  if(base.length){ html+=photoUploadBtnHtml(0,true)+sectorPhotosMiniHtml(0)+sectorDetailHtml(0); }
   host.innerHTML=html;
 
   // Fotos por sector — solo la fila de foto (sin listado de posición por equipo)
@@ -3007,7 +3069,7 @@ function renderTech(){
     else {
       host2.innerHTML = secOrder.map(secId=>
         '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0 5px"><span style="font-size:10px;font-weight:700;color:var(--tx);padding:3px 8px;background:var(--dk3);border-radius:5px">▸ '+sgEsc(secNames[secId])+'</span></div>'+
-        photoUploadBtnHtml(secId,true)+sectorPhotosMiniHtml(secId)
+        photoUploadBtnHtml(secId,true)+sectorPhotosMiniHtml(secId)+sectorDetailHtml(secId)
       ).join('');
     }
   }
@@ -3082,6 +3144,8 @@ function printEquipSummary(){
   let total=0;
   let r='<table class="pt"><tr><th>Equipo</th><th>Cant. total</th></tr>';
   keys.forEach(k=>{ total+=agg[k]; r+='<tr><td>'+_pesc(_lblOf(k))+'</td><td>'+agg[k]+'</td></tr>'; });
+  const stVeh=stVehSafetouchTotal();
+  if(stVeh>0){ total+=stVeh; r+='<tr><td>Safetouch (en Pilar)</td><td>'+stVeh+'</td></tr>'; }
   r+='<tr><td style="font-weight:800;background:#fff7ed">TOTAL DE EQUIPOS</td><td style="font-weight:800;background:#fff7ed">'+total+'</td></tr></table>';
   return _pCard('📦 Resumen de Equipos — total por tipo (para presupuesto)', r);
 }
@@ -3128,8 +3192,13 @@ function printDiagram(){
   try{ generateDiagram(); }catch(e){}
   const svg=document.getElementById('diagSvg');
   if(!svg || svg.style.display==='none' || !svg.innerHTML) return '';
-  const scaled=scaleSvgForPrint(svg, 720, 940);
-  return _pCard('Diagrama de Red estructurado', '<div class="pdiag">'+scaled+'</div>');
+  const pages=buildDiagramPages(svg, 720, 940);
+  if(!pages.length) return '';
+  return pages.map((html,i)=>{
+    const title = pages.length>1 ? ('Diagrama de Red estructurado — Parte '+(i+1)+' de '+pages.length) : 'Diagrama de Red estructurado';
+    const brk = i>0 ? ' style="page-break-before:always"' : '';
+    return '<div class="pc"'+brk+'><div class="pc-h">'+_pesc(title)+'</div><div class="pc-b"><div class="pdiag">'+html+'</div></div></div>';
+  }).join('');
 }
 function printFirmas(){
   const rec=(document.getElementById('p_rec')||{}).value||'';
@@ -3168,28 +3237,40 @@ function printMatrix(){
   return css+t+u;
 }
 function printPhotos(){
-  if(!projectPhotos.length) return '';
+  const noteKeys=Object.keys(sectorPhotoNotes||{}).filter(k=>(sectorPhotoNotes[k]||'').trim());
+  if(!projectPhotos.length && !noteKeys.length) return '';
   // ancho de columna fijo en px (2 por fila en A4) para que iPad imprima las imágenes
   const COLW=330;
   const groups={}; const order=[];
-  projectPhotos.forEach(p=>{
-    const key=String(p.secId==null?'__none__':p.secId);
-    if(!groups[key]){ groups[key]={label:(typeof sectorPhotoLabel==='function'?sectorPhotoLabel(p.secId):'Fotos'), items:[]}; order.push(key); }
-    groups[key].items.push(p);
+  const ensureGroup=(secId)=>{
+    const key=String(secId==null?'__none__':secId);
+    if(!groups[key]){ groups[key]={label:(typeof sectorPhotoLabel==='function'?sectorPhotoLabel(secId):'Fotos'), items:[], note:''}; order.push(key); }
+    return groups[key];
+  };
+  projectPhotos.forEach(p=>{ ensureGroup(p.secId).items.push(p); });
+  noteKeys.forEach(k=>{
+    const secId = (k==='null'||k==='') ? null : (isNaN(+k)?k:+k);
+    ensureGroup(secId).note = sectorPhotoNotes[k];
   });
   let out='';
   order.forEach(key=>{
     const grp=groups[key];
-    let g='<div style="display:flex;flex-wrap:wrap;gap:12px">';
-    grp.items.forEach(p=>{
-      const w=p.w||COLW, h=p.h||Math.round(COLW*0.7);
-      const dh=Math.round(COLW*h/w);
-      g+='<div style="width:'+COLW+'px;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;break-inside:avoid;page-break-inside:avoid">'+
-         '<img src="'+p.data+'" width="'+COLW+'" height="'+dh+'" style="width:'+COLW+'px;height:'+dh+'px;object-fit:cover;display:block">'+
-         (p.caption?('<div style="font-size:10px;color:#334155;padding:5px 8px;border-top:1px solid #e2e8f0">'+_pesc(p.caption)+'</div>'):'')+
-       '</div>';
-    });
-    g+='</div>';
+    let g='';
+    if(grp.items.length){
+      g+='<div style="display:flex;flex-wrap:wrap;gap:12px">';
+      grp.items.forEach(p=>{
+        const w=p.w||COLW, h=p.h||Math.round(COLW*0.7);
+        const dh=Math.round(COLW*h/w);
+        g+='<div style="width:'+COLW+'px;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;break-inside:avoid;page-break-inside:avoid">'+
+           '<img src="'+p.data+'" width="'+COLW+'" height="'+dh+'" style="width:'+COLW+'px;height:'+dh+'px;object-fit:cover;display:block">'+
+           (p.caption?('<div style="font-size:10px;color:#334155;padding:5px 8px;border-top:1px solid #e2e8f0">'+_pesc(p.caption)+'</div>'):'')+
+         '</div>';
+      });
+      g+='</div>';
+    }
+    if((grp.note||'').trim()){
+      g+='<div style="margin-top:'+(grp.items.length?'10px':'0')+';font-size:11px;color:#334155;line-height:1.5"><b>Detalle:</b> '+_pesc(grp.note.trim())+'</div>';
+    }
     out+=_pCard(grp.label.replace(/^[▸⚙️📎]+\s*/,''), g);
   });
   return out;
