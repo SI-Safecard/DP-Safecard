@@ -873,6 +873,8 @@ table.mtx td.mx-num{color:var(--tx);font-weight:600;min-width:48px}
     </div>
     <div style="font-size:11px;color:var(--mt);margin-bottom:10px">Equipos (filas) × sectores/accesos (columnas) con cantidades. Editá la columna <b>Detalle</b> si necesitás. Descargá el PDF (horizontal) para pegarlo en tu presupuesto.</div>
     <div id="matrixHost"></div>
+    <div style="font-size:14px;font-weight:800;color:var(--br);margin:16px 0 6px">🗂️ Resumen de Sectores Configurados</div>
+    <div id="sectorSummaryHost"></div>
   </div>
 </div>
 
@@ -2939,10 +2941,11 @@ function photoUploadBtnHtml(secId, small){
 function sectorPhotosMiniHtml(secId){
   const idxs=[]; projectPhotos.forEach((p,i)=>{ if(String(p.secId==null?'':p.secId)===String(secId==null?'':secId)) idxs.push(i); });
   if(!idxs.length) return '';
-  return '<div style="display:flex;flex-wrap:wrap;gap:6px;margin:-2px 0 8px">'+
-    idxs.map(i=>{ const p=projectPhotos[i]; return '<div style="position:relative;width:60px;height:60px;border-radius:6px;overflow:hidden;border:1px solid var(--bd)">'+
-      '<img src="'+p.data+'" style="width:100%;height:100%;object-fit:cover;display:block">'+
-      '<button onclick="photoDel('+i+')" title="Eliminar" style="position:absolute;top:1px;right:1px;background:rgba(239,68,68,.92);border:none;color:#fff;width:16px;height:16px;border-radius:4px;cursor:pointer;font-size:10px;line-height:1;padding:0">✕</button></div>'; }).join('')+
+  return '<div style="display:flex;flex-wrap:wrap;gap:8px;margin:-2px 0 8px">'+
+    idxs.map(i=>{ const p=projectPhotos[i]; return '<div style="width:96px;border-radius:6px;overflow:hidden;border:1px solid var(--bd);background:var(--in)">'+
+      '<div style="position:relative"><img src="'+p.data+'" style="width:100%;height:72px;object-fit:cover;display:block">'+
+      '<button onclick="photoDel('+i+')" title="Eliminar" style="position:absolute;top:2px;right:2px;background:rgba(239,68,68,.92);border:none;color:#fff;width:18px;height:18px;border-radius:4px;cursor:pointer;font-size:11px;line-height:1;padding:0">✕</button></div>'+
+      '<input value="'+sgEsc(p.caption||'')+'" oninput="photoCaption('+i+',this.value)" placeholder="Descripción…" style="width:100%;border:none;border-top:1px solid var(--bd);background:transparent;color:var(--tx);font-size:9.5px;font-family:inherit;padding:4px 5px;outline:none;box-sizing:border-box"></div>'; }).join('')+
   '</div>';
 }
 function setSectorPhotoNote(secId,val){ sectorPhotoNotes[secId]=val; }
@@ -3206,6 +3209,25 @@ function printFirmas(){
   const blk=(rol)=>'<div class="pfirma"><div class="pfl"></div><div class="pfn">'+rol+'</div><div class="pfd">Nombre · RUT · Fecha · Firma</div></div>';
   return _pCard('Conformidad', stmt+'<div class="pfgrid">'+blk('Ejecutivo Comercial')+blk('ITO Técnico')+blk('Jefe de Instalaciones')+blk('Cliente — Conforme')+'</div>');
 }
+function printSectorSummary(){
+  if(!sectors.length) return '';
+  const rowsData=sectors.map(s=>({name:s.name||('Sector '+s.id),items:s.items,isBase:false}))
+    .concat([{name:'Base de Red',items:baseSector.items,isBase:true}]);
+  let totAll=0; const typesAllSet=new Set();
+  let t='<div style="page-break-before:always"></div>'
+    +'<div style="margin-bottom:6px;font-size:11px;font-weight:700;color:#1d4ed8">Resumen de Sectores Configurados</div>'
+    +'<table class="pmx"><thead><tr><th class="l">Sector</th><th>Total equipos</th><th>Tipos de equipo</th></tr></thead><tbody>';
+  rowsData.forEach(r=>{
+    const entries=Object.entries(r.items||{}).filter(([,q])=>q>0);
+    const tot=entries.reduce((a,[,q])=>a+q,0);
+    const typesSec=new Set(entries.map(([k])=>baseKey(k)));
+    totAll+=tot; typesSec.forEach(tp=>typesAllSet.add(tp));
+    t+='<tr><td class="l">'+(r.isBase?'⚙️ ':'▸ ')+_pesc(r.name)+'</td><td class="'+(tot>0?'hl':'')+'">'+tot+'</td><td>'+typesSec.size+'</td></tr>';
+  });
+  t+='<tr style="font-weight:700"><td class="l">Total ('+sectors.length+' sector'+(sectors.length!==1?'es':'')+' + Base de Red)</td><td class="hl">'+totAll+'</td><td>'+typesAllSet.size+'</td></tr>';
+  t+='</tbody></table>';
+  return t;
+}
 function printMatrix(){
   const cols=matrixSectors(); const rows=matrixRows();
   if(!rows.length && !sectors.length) return '';
@@ -3219,7 +3241,8 @@ function printMatrix(){
   t+='</tbody></table>';
   let u=''; const ucols=sectors.map(s=>({id:s.id,name:s.name||('Sector '+s.id)}));
   if(ucols.length){
-    u='<div class="pmx-sub">Configuración de Usabilidad</div>';
+    u='<div style="page-break-before:always"></div>';
+    u+='<div class="pmx-sub">Configuración de Usabilidad</div>';
     u+='<table class="pmx"><thead><tr><th class="l">Detalle de uso y operación</th>';
     ucols.forEach(c=>{ u+='<th>'+_pesc(c.name)+'</th>'; });
     u+='</tr></thead><tbody>';
@@ -3290,7 +3313,8 @@ function buildPrintDoc(){
   let body=_pSection('Datos del Proyecto', true)+printProyecto();
   body+=_pSection('Equipamiento')+printEquipSummary()+printEquip();
   if(sgConfigs.length) body+=_pSection('Speedgate / Torniquetes')+printSpeedgate();
-  const mtx=printMatrix(); if(mtx) body+=_pSection('Matriz de Equipos y Usabilidad')+mtx;
+  const secSum=printSectorSummary(); const mtx=printMatrix();
+  if(secSum||mtx) body+=_pSection('Matriz de Equipos y Usabilidad')+mtx+secSum;
   body+=_pSection('Información Técnica')+printTecnico();
   const diag=printDiagram(); if(diag) body+=_pSection('Diagrama de Red')+diag;
   const fotos=printPhotos(); if(fotos) body+=_pSection('Registro Fotográfico')+fotos;
@@ -3372,6 +3396,26 @@ let showZeroRows = false;
 function setMatrizDet(key,val){ matrizDetalle[key]=val; }
 function toggleZeroRows(){ showZeroRows=!showZeroRows; const b=document.getElementById('mtxZeroBtn'); if(b) b.textContent=showZeroRows?'Ocultar equipos en 0':'Mostrar equipos en 0'; renderMatrix(); }
 function matrixSectors(){ return [{id:0,name:'Base de Red'}].concat(sectors.map(s=>({id:s.id,name:s.name||('Sector '+s.id)}))); }
+function renderSectorSummary(){
+  const host=document.getElementById('sectorSummaryHost'); if(!host) return;
+  if(!sectors.length){ host.innerHTML='<div style="color:var(--mt);font-style:italic;padding:6px 0 12px">Sin sectores definidos — creálos en la pestaña <b>Proyecto</b>.</div>'; return; }
+  const rowsData=sectors.map(s=>({name:s.name||('Sector '+s.id),color:s.color,items:s.items,isBase:false}))
+    .concat([{name:'Base de Red',color:baseSector.color,items:baseSector.items,isBase:true}]);
+  let h='<div style="overflow:auto;border:1px solid var(--bd);border-radius:8px;margin-bottom:14px"><table class="mtx"><thead><tr><th class="mx-eq">Sector</th><th>Total equipos</th><th>Tipos de equipo</th></tr></thead><tbody>';
+  let totAll=0; const typesAllSet=new Set();
+  rowsData.forEach(r=>{
+    const entries=Object.entries(r.items||{}).filter(([,q])=>q>0);
+    const tot=entries.reduce((a,[,q])=>a+q,0);
+    const typesSec=new Set(entries.map(([k])=>baseKey(k)));
+    totAll+=tot; typesSec.forEach(t=>typesAllSet.add(t));
+    h+='<tr><td class="mx-eq">'+(r.isBase?'⚙️':'▸')+' <span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+r.color+';margin-right:5px;vertical-align:middle"></span>'+sgEsc(r.name)+'</td>'
+      +'<td class="mx-cant'+(tot>0?' hl':'')+'">'+tot+'</td>'
+      +'<td class="mx-cant">'+typesSec.size+'</td></tr>';
+  });
+  h+='<tr style="font-weight:800;background:var(--dk3)"><td class="mx-eq">Total ('+sectors.length+' sector'+(sectors.length!==1?'es':'')+' + Base de Red)</td><td class="mx-cant hl">'+totAll+'</td><td class="mx-cant">'+typesAllSet.size+'</td></tr>';
+  h+='</tbody></table></div>';
+  host.innerHTML=h;
+}
 function matrixQty(key, secId){ const its = secId===0?baseSector.items:((sectors.find(s=>s.id===secId)||{}).items||{}); return its[key]||0; }
 function matrixRows(){
   const cols=matrixSectors();
@@ -3399,6 +3443,7 @@ function matrixDetCell(key){
   return '<input value="'+sgEsc(matrizDetalle[key]||'')+'" oninput="setMatrizDet(\''+sgEsc(key)+'\',this.value)">';
 }
 function renderMatrix(){
+  renderSectorSummary();
   const host=document.getElementById('matrixHost'); if(!host) return;
   const rec=(document.getElementById('p_rec')||{}).value||'';
   const tEl=document.getElementById('mtxTitle'); if(tEl) tEl.textContent = rec ? ('Matriz de Equipos · '+rec) : 'Matriz de Equipos';
@@ -3451,7 +3496,7 @@ function buildMatrixPrint(){
     USAB_FEATURES.forEach((f,fi)=>{ const na=!!usabNA[fi]; u+='<tr><td class="l"'+(na?' style="text-decoration:line-through;color:#94a3b8"':'')+'>'+_pesc(f)+(na?' (N/A)':'')+'</td>'; ucols.forEach(c=>{ u+='<td'+(na?' style="color:#94a3b8"':'')+'>'+(na?'—':(usabMatrix[fi+':'+c.id]?'X':''))+'</td>'; }); u+='</tr>'; });
     u+='</tbody></table>';
   }
-  return css+'<div class="mxh">'+_pesc(rec||'Resumen de Equipos')+'</div>'+t+u;
+  return css+'<div class="mxh">'+_pesc(rec||'Resumen de Equipos')+'</div>'+t+printSectorSummary()+u;
 }
 function exportMatrizPDF(){
   const root=document.getElementById('printRoot'); if(!root) return;
