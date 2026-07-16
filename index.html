@@ -1222,6 +1222,17 @@ function renderSectorView(){
     const vv=keyVar(key);
     const tag = vv ? `<div style="font-size:9px;font-weight:800;color:${color};margin-top:3px;line-height:1.2;text-align:center">${variantShort(b,vv)}</div>` : '';
     const plusOnclick = (vv && REPROMPT_ON_ADD.has(b)) ? `addItemToSector('${b}')` : `changeQty('${key}',1)`;
+    let dirRow='';
+    if(isDirEq(key)){
+      const ent=getDirEntrada(activeSecId,key,qty);
+      const sal=getDirSalida(activeSecId,key,qty);
+      dirRow=`<div style="display:flex;align-items:center;justify-content:center;gap:5px;margin-top:5px;font-size:9px;color:var(--mt)">
+        <span>Entrada</span>
+        <input type="number" min="0" max="${qty}" value="${ent}" onchange="setDirEntrada('${key}',this.value)"
+          style="width:30px;font-size:9px;padding:1px 2px;text-align:center;border:1px solid ${color}60;border-radius:4px;background:var(--in);color:${color}">
+        <span>Salida <b style="color:${color}">${sal}</b></span>
+      </div>`;
+    }
     return `<div class="eq-item" style="border-color:${color}40">
       <button class="eq-remove" onclick="removeItemFromSector('${key}')" title="Quitar">✕</button>
       <img src="${src}" alt="${baseLb}">
@@ -1230,7 +1241,7 @@ function renderSectorView(){
         <button class="qbtn" onclick="changeQty('${key}',-1)">−</button>
         <span class="qnum" style="color:${color}">${qty}</span>
         <button class="qbtn" onclick="${plusOnclick}">＋</button>
-      </div>
+      </div>${dirRow}
     </div>`;
   }).join('');
 }
@@ -1239,7 +1250,8 @@ function changeQty(key,delta){
   if(activeSecId===null)return;
   const items=getSecItems(activeSecId);
   const nv=Math.max(0,(items[key]||0)+delta);
-  if(nv===0)delete items[key]; else items[key]=nv;
+  if(nv===0){ delete items[key]; if(dirSplit[activeSecId]) delete dirSplit[activeSecId][key]; }
+  else{ items[key]=nv; if(dirSplit[activeSecId] && dirSplit[activeSecId][key]!=null && dirSplit[activeSecId][key]>nv) dirSplit[activeSecId][key]=nv; }
   afterItemChange();
 }
 
@@ -1247,7 +1259,29 @@ function removeItemFromSector(key){
   if(activeSecId===null)return;
   const items=getSecItems(activeSecId);
   delete items[key];
+  if(dirSplit[activeSecId]) delete dirSplit[activeSecId][key];
   renderSectorView();renderLib();updSwCalc();upProg();
+}
+
+// ── Entrada / Salida por equipo (solo para equipos direccionales) ──
+const DIRECTIONAL_KEYS = new Set(['safetouch','barrera_zkteco','barrera_skidata','camara_lpr','camara_lpr_quercus','face_id','video_portero','isafe_wall','isafe_vehicular']);
+let dirSplit = {}; // dirSplit[secId] = { fullKey: cantidadEntrada }
+function isDirEq(key){ return DIRECTIONAL_KEYS.has(baseKey(key)); }
+function getDirEntrada(secId,key,qty){
+  const rec = dirSplit[secId];
+  let v = rec ? rec[key] : undefined;
+  if(v==null) v = qty;
+  if(v>qty) v=qty; if(v<0) v=0;
+  return v;
+}
+function getDirSalida(secId,key,qty){ return qty - getDirEntrada(secId,key,qty); }
+function setDirEntrada(key,val){
+  if(activeSecId===null) return;
+  const items=getSecItems(activeSecId); const qty=items[key]||0;
+  let v = Math.max(0, Math.min(qty, parseInt(val,10)||0));
+  if(!dirSplit[activeSecId]) dirSplit[activeSecId]={};
+  dirSplit[activeSecId][key]=v;
+  renderSectorView();
 }
 
 // ══ BIBLIOTECA ════════════════════════════════════════════════════════════
@@ -1477,9 +1511,9 @@ function generateDiagram(){
 
   // ── Layout constants ────────────────────────────────────────────────────
   const NW=90, NH=82, IMGW=50, IMGH=42;
-  const NODE_GX=14, NODE_GY=24, MAX_COL=7;
+  const NODE_GX=14, NODE_GY=32, MAX_COL=7;
   const TITLE_H=64, VPAD=24, HPAD=60;
-  const LBL_H=30, BOX_PAD_X=18, BOX_PAD_Y=20;
+  const LBL_H=30, BOX_PAD_X=18, BOX_PAD_Y=28;
   const SEC_GAP_Y=44;        // vertical gap between boxes
   const TRUNK_X_OFFSET=40;   // left trunk line X offset from left edge
   const TRUNK_C='#475569', TRUNK_W=2.5;
@@ -1492,7 +1526,19 @@ function generateDiagram(){
     const nodes=[];
     Object.entries(itemsObj).filter(([,q])=>q>0).forEach(([k,q])=>{
       const lb=lbOf(k);
-      for(let i=0;i<q;i++) nodes.push({key:k, lb:q>1?lb+' '+(i+1):lb, pid:secId+':'+k+':'+i});
+      const dirEq=isDirEq(k);
+      const ent=dirEq?getDirEntrada(secId,k,q):null;
+      const sal=dirEq?(q-ent):null;
+      let entIdx=0, salIdx=0;
+      for(let i=0;i<q;i++){
+        let dir=null;
+        if(dirEq){
+          if(i<ent){ entIdx++; dir = 'Entrada'+(ent>1?(' '+entIdx):''); }
+          else{ salIdx++; dir = 'Salida'+(sal>1?(' '+salIdx):''); }
+        }
+        const nodeLb = (!dirEq && q>1) ? (lb+' '+(i+1)) : lb;
+        nodes.push({key:k, lb:nodeLb, dir, pid:secId+':'+k+':'+i});
+      }
     });
     return nodes;
   }
@@ -1732,6 +1778,16 @@ function generateDiagram(){
       const txt = pos.length>20 ? pos.slice(0,19)+'…' : pos;
       const lt=el('text',{x:x+NW/2,y:y-6,'text-anchor':'middle','font-size':'8.5','font-family':'system-ui,-apple-system,sans-serif',fill:'#b45309','font-weight':'700'});
       lt.textContent=txt; g.appendChild(lt);
+    }
+    if(nd.dir){
+      const isEntBadge = /^Entrada/.test(nd.dir);
+      const dc = isEntBadge ? '#2563eb' : '#d97706';
+      const dBg = isEntBadge ? '#dbeafe' : '#fef3c7';
+      const dbw=NW-10, dbh=11, dbx=x+(NW-dbw)/2, dby = y+NH+6;
+      g.appendChild(el('rect',{x:dbx,y:dby,width:dbw,height:dbh,rx:5,fill:dBg}));
+      const dTxt=el('text',{x:x+NW/2,y:dby+dbh/2,'text-anchor':'middle','font-size':'7','font-family':'system-ui,-apple-system,sans-serif',fill:dc,'font-weight':'800','dominant-baseline':'middle'});
+      dTxt.textContent=nd.dir.toUpperCase();
+      g.appendChild(dTxt);
     }
     const isSG = bk==='speedgate'||bk==='speedgate_doble';
     if(isSG){
@@ -2028,8 +2084,8 @@ function exportExcel(){
   const rows2 = [];
   rows2.push(['EQUIPAMIENTO POR SECTOR · SAFECARD', ...Array(secNames.length+3).fill('')]);
   rows2.push([]);
-  rows2.push(['EQUIPO', 'KEY', 'TOTAL', ...secNames]);
-  rows2.push(['▶ Nombre del Sector', '', '', ...secNames]);
+  rows2.push(['EQUIPO', 'KEY', 'TOTAL', ...secNames, 'ENTRADA', 'SALIDA']);
+  rows2.push(['▶ Nombre del Sector', '', '', ...secNames, '', '']);
 
   (function(){
     const present={};
@@ -2039,7 +2095,8 @@ function exportExcel(){
     eqKeys.forEach(key=>{
       const qtys = allSecs.map(s=>(s.items[key]||0));
       const total = qtys.reduce((a,b)=>a+b,0);
-      if(total > 0) rows2.push([lbOf(key), key, total, ...qtys]);
+      const dt = dirTotals(key);
+      if(total > 0) rows2.push([lbOf(key), key, total, ...qtys, dt?dt.entrada:'', dt?dt.salida:'']);
     });
   })();
 
@@ -2059,19 +2116,21 @@ function exportExcel(){
   rows2.push([sw4v>0?'⚠ Switch 8P adicionales necesarios':'✅ Puertos suficientes', '', sw4v>0?sw4v:(portsDef-portsReq)]);
 
   const ws2 = XLSX.utils.aoa_to_sheet(rows2);
-  const colWidths = [{wch:30},{wch:20},{wch:10},...secNames.map(()=>({wch:18}))];
+  const colWidths = [{wch:30},{wch:20},{wch:10},...secNames.map(()=>({wch:18})),{wch:12},{wch:12}];
   ws2['!cols'] = colWidths;
   ws2['!merges'] = ws2['!merges']||[];
 
   // Style header
-  styleRange(ws2, 0, 0, 0, 2+secNames.length, sTitle);
-  ws2['!merges'].push({s:{r:0,c:0},e:{r:0,c:2+secNames.length}});
+  styleRange(ws2, 0, 0, 0, 4+secNames.length, sTitle);
+  ws2['!merges'].push({s:{r:0,c:0},e:{r:0,c:4+secNames.length}});
 
   // Column headers row (row 2)
   styleCell(ws2, 2, 0, sSecHdr);
   styleCell(ws2, 2, 1, sSecHdr);
   styleCell(ws2, 2, 2, sNumHdr);
   secNames.forEach((_,ci)=>styleCell(ws2, 2, 3+ci, sNumHdr));
+  styleCell(ws2, 2, 3+secNames.length, sNumHdr);
+  styleCell(ws2, 2, 4+secNames.length, sNumHdr);
 
   // Sector name row (row 3) — colored per sector
   styleCell(ws2, 3, 0, sLabel);
@@ -2081,6 +2140,8 @@ function exportExcel(){
     const sc = s({sz:10,bold:true,color:C.WHITE}, sec.color.replace('#',''), 'center', true);
     styleCell(ws2, 3, 3+ci, sc);
   });
+  styleCell(ws2, 3, 3+secNames.length, sLabel);
+  styleCell(ws2, 3, 4+secNames.length, sLabel);
 
   // Data rows
   for(let ri=4; ri<rows2.length-9; ri++){
@@ -2095,6 +2156,12 @@ function exportExcel(){
       const qs = qty>0 ? s({sz:10,bold:true,color:'166534'},'DCFCE7','center',true) : sNum;
       styleCell(ws2, ri, 3+ci, qty>0?qs:sNum);
     });
+    const entVal = rows2[ri][3+secNames.length];
+    const salVal = rows2[ri][4+secNames.length];
+    const esE = entVal>0 ? s({sz:10,bold:true,color:'1d4ed8'},'DBEAFE','center',true) : sNum;
+    const esS = salVal>0 ? s({sz:10,bold:true,color:'b45309'},'FEF3C7','center',true) : sNum;
+    styleCell(ws2, ri, 3+secNames.length, esE);
+    styleCell(ws2, ri, 4+secNames.length, esS);
   }
 
   // Infra calc section
@@ -2236,7 +2303,7 @@ function saveProject(){
     if(on.length) toggles[g.id]=on;
   });
   const data={ _safecard:1, savedAt:new Date().toISOString(), fields, toggles,
-    state:{ baseSector, sectors, sid, activeSecId, tech, equipUbic, equipPos, sgConfigs, sgUid, matrizDetalle, usabMatrix, usabNA, projectPhotos, sectorPhotoNotes } };
+    state:{ baseSector, sectors, sid, activeSecId, tech, equipUbic, equipPos, sgConfigs, sgUid, matrizDetalle, usabMatrix, usabNA, projectPhotos, sectorPhotoNotes, dirSplit } };
   const blob=new Blob([JSON.stringify(data)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
   const nm=((typeof v==='function'?v('p_rec'):'')||'proyecto').replace(/[^a-z0-9]+/gi,'_').slice(0,40)||'proyecto';
@@ -2277,6 +2344,7 @@ function loadProject(file){
     usabNA = st.usabNA || {};
     projectPhotos = Array.isArray(st.projectPhotos)?st.projectPhotos:[];
     sectorPhotoNotes = st.sectorPhotoNotes || {};
+    dirSplit = st.dirSplit || {};
     // migración: saves antiguos guardaban variantes aparte (variantInfo / safetouchCarc) → ahora son ítems independientes (clave base|variante)
     (function(){
       const vi = st.variantInfo || (st.safetouchCarc ? {safetouch: st.safetouchCarc} : null);
@@ -2368,7 +2436,7 @@ function clearAll(){
   sectors=[];sid=0;activeSecId=null;
   baseSector={id:0,name:'Base de Red',color:'#0891b2',items:{}};
   tech={ utp:'', fibra:'', emt:'', emtMed:'', pvc:'', pvcMed:'', servPos:'', servOtro:'', notas:'', oocc:'' }; equipUbic={}; equipPos={};
-  sgConfigs=[]; sgUid=0; matrizDetalle={}; usabMatrix={}; usabNA={}; projectPhotos=[]; sectorPhotoNotes={};
+  sgConfigs=[]; sgUid=0; matrizDetalle={}; usabMatrix={}; usabNA={}; projectPhotos=[]; sectorPhotoNotes={}; dirSplit={};
   renderSectors();renderLib();renderSectorView();updSwCalc();upProg();renderTech();
   if(typeof renderMatrix==='function') renderMatrix();
   const svg=document.getElementById('diagSvg');
@@ -3233,10 +3301,13 @@ function printMatrix(){
   if(!rows.length && !sectors.length) return '';
   let t='<table class="pmx"><thead><tr><th class="l">Equipos</th><th>Cant.</th><th class="l">Detalle</th>';
   cols.forEach(c=>{ t+='<th>'+_pesc(c.name)+'</th>'; });
+  t+='<th>Entrada</th><th>Salida</th>';
   t+='</tr></thead><tbody>';
   rows.forEach(it=>{ const tot=cols.reduce((a,c)=>a+matrixQty(it.key,c.id),0);
+    const dt=dirTotals(it.key);
     t+='<tr><td class="l">'+_pesc(it.lb)+'</td><td class="'+(tot>0?'hl':'')+'">'+tot+'</td><td class="l">'+_pesc(matrixDetText(it.key))+'</td>';
     cols.forEach(c=>{ const q=matrixQty(it.key,c.id); t+='<td>'+(q>0?q:'')+'</td>'; });
+    t+='<td>'+(dt?dt.entrada:'')+'</td><td>'+(dt?dt.salida:'')+'</td>';
     t+='</tr>'; });
   t+='</tbody></table>';
   let u=''; const ucols=sectors.map(s=>({id:s.id,name:s.name||('Sector '+s.id)}));
@@ -3417,6 +3488,12 @@ function renderSectorSummary(){
   host.innerHTML=h;
 }
 function matrixQty(key, secId){ const its = secId===0?baseSector.items:((sectors.find(s=>s.id===secId)||{}).items||{}); return its[key]||0; }
+function dirTotals(key){
+  if(!isDirEq(key)) return null;
+  let entrada=0, total=0;
+  matrixSectors().forEach(c=>{ const q=matrixQty(key,c.id); total+=q; entrada+=getDirEntrada(c.id,key,q); });
+  return {entrada, salida: total-entrada};
+}
 function matrixRows(){
   const cols=matrixSectors();
   const present={};
@@ -3452,13 +3529,16 @@ function renderMatrix(){
   let h='<div style="overflow:auto;max-height:calc(100svh - 220px);border:1px solid var(--bd);border-radius:8px"><table class="mtx">';
   h+='<thead><tr><th class="mx-eq">Equipos</th><th>Cantidad de equipos</th><th>Detalle</th>';
   cols.forEach(c=>{ h+='<th class="mx-sec">'+sgEsc(c.name)+'</th>'; });
+  h+='<th class="mx-sec">Entrada</th><th class="mx-sec">Salida</th>';
   h+='</tr></thead><tbody>';
   rows.forEach(it=>{
     const tot=cols.reduce((a,c)=>a+matrixQty(it.key,c.id),0);
+    const dt=dirTotals(it.key);
     h+='<tr><td class="mx-eq">'+sgEsc(it.lb)+'</td>';
     h+='<td class="mx-cant'+(tot>0?' hl':'')+'">'+tot+'</td>';
     h+='<td class="mx-det">'+matrixDetCell(it.key)+'</td>';
     cols.forEach(c=>{ const q=matrixQty(it.key,c.id); h+='<td class="mx-num">'+(q>0?q:'')+'</td>'; });
+    h+='<td class="mx-num">'+(dt?dt.entrada:'')+'</td><td class="mx-num">'+(dt?dt.salida:'')+'</td>';
     h+='</tr>';
   });
   h+='</tbody></table></div>';
@@ -3470,10 +3550,13 @@ function buildMatrixPrint(){
   const cols=matrixSectors(); const rows=matrixRows();
   let t='<table class="mxp"><thead><tr><th class="l">Equipos</th><th>Cantidad de equipos</th><th class="l">Detalle</th>';
   cols.forEach(c=>{ t+='<th>'+_pesc(c.name)+'</th>'; });
+  t+='<th>Entrada</th><th>Salida</th>';
   t+='</tr></thead><tbody>';
   rows.forEach(it=>{ const tot=cols.reduce((a,c)=>a+matrixQty(it.key,c.id),0);
+    const dt=dirTotals(it.key);
     t+='<tr><td class="l">'+_pesc(it.lb)+'</td><td class="'+(tot>0?'hl':'')+'">'+tot+'</td><td class="l">'+_pesc(matrixDetText(it.key))+'</td>';
     cols.forEach(c=>{ const q=matrixQty(it.key,c.id); t+='<td>'+(q>0?q:'')+'</td>'; });
+    t+='<td>'+(dt?dt.entrada:'')+'</td><td>'+(dt?dt.salida:'')+'</td>';
     t+='</tr>'; });
   t+='</tbody></table>';
   const css='<style>@page{size:A4 landscape;margin:8mm}'
