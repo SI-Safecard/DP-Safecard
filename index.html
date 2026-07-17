@@ -2287,7 +2287,7 @@ function copyJSON(){
 }
 
 // ── Guardar / Cargar proyecto completo (para edición posterior del ITO / Jefe) ──
-function saveProject(){
+async function saveProject(){
   const fields={};
   document.querySelectorAll('input[id],select[id],textarea[id]').forEach(el=>{
     if(/^(p_|t_|ca_|ci_|cc_)/.test(el.id)) fields[el.id] = (el.type==='checkbox') ? el.checked : el.value;
@@ -2304,10 +2304,33 @@ function saveProject(){
   });
   const data={ _safecard:1, savedAt:new Date().toISOString(), fields, toggles,
     state:{ baseSector, sectors, sid, activeSecId, tech, equipUbic, equipPos, sgConfigs, sgUid, matrizDetalle, usabMatrix, usabNA, projectPhotos, sectorPhotoNotes, dirSplit } };
-  const blob=new Blob([JSON.stringify(data)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  const jsonStr = JSON.stringify(data);
   const nm=((typeof v==='function'?v('p_rec'):'')||'proyecto').replace(/[^a-z0-9]+/gi,'_').slice(0,40)||'proyecto';
-  a.download='Safecard_'+nm+'.json'; document.body.appendChild(a); a.click();
+  const filename='Safecard_'+nm+'.json';
+
+  // "Guardar como…" nativo (PC/tablet con Chrome, Edge, etc.) — deja elegir carpeta y nombre
+  if(window.showSaveFilePicker){
+    try{
+      const handle = await window.showSaveFilePicker({
+        suggestedName: filename,
+        types: [{ description:'Proyecto Safecard (JSON)', accept:{'application/json':['.json']} }]
+      });
+      const writable = await handle.createWritable();
+      await writable.write(jsonStr);
+      await writable.close();
+      toast('💾 Proyecto guardado (.json)');
+      return;
+    }catch(e){
+      if(e && e.name==='AbortError') return; // el usuario canceló el diálogo
+      // si falla por otro motivo, sigue con el método de respaldo de abajo
+    }
+  }
+
+  // Respaldo (Safari / navegadores sin selector de guardado nativo): descarga normal,
+  // el usuario puede elegir "Guardar en Archivos…" / mover el archivo desde ahí.
+  const blob=new Blob([jsonStr],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=filename; document.body.appendChild(a); a.click();
   setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },120);
   toast('💾 Proyecto guardado (.json)');
 }
@@ -3596,6 +3619,15 @@ document.getElementById('p_fec').value=new Date().toISOString().split('T')[0];
 // Iniciar limpio — sectores se crean desde el formulario
 activeSecId=0;
 renderSectors();renderLib();renderSectorView();updSwCalc();upProg();renderSG();renderTech();renderMatrix();
+
+// ══ PWA / MODO OFFLINE ═══════════════════════════════════════════════════
+// Registra el service worker (sw.js, debe estar en la misma carpeta que este archivo)
+// para que la app pueda abrirse sin conexión luego de la primera carga online.
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('./sw.js').catch(function(){});
+  });
+}
 </script>
 <div id="printRoot"></div>
 </body>
