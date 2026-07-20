@@ -1395,6 +1395,11 @@ function pickVariant(key,cb){
 }
 
 // ══ CALC SWITCHES ═════════════════════════════════════════════════════════
+// Equipos que no consumen puerto de switch propio y no se consideran en el cálculo de puertos
+// (Pilar es una estructura física; los Safetouch que lleva montados se cuentan aparte)
+const PORT_CALC_EXCLUDE = new Set(['safetouch_veh_curvo']);
+// Equipos que no se muestran en el cuadro "Resumen de Equipos" (viven en Base de Red o son un cálculo derivado)
+const SUMMARY_HIDE = new Set(['router_3g_5g','internet']);
 function updSwCalc(){
   // Total equipos y puertos (torniquetes + speedgate doble = 2 puertos c/u)
   const TWO_PORT = new Set(['torniquete_safecard','torniquete_estadio','speedgate_doble']);
@@ -1402,6 +1407,7 @@ function updSwCalc(){
   let totPorts = 0;
   sectors.forEach(s => {
     Object.entries(s.items).forEach(([key,qty]) => {
+      if(PORT_CALC_EXCLUDE.has(baseKey(key))) return;
       tot += qty;
       totPorts += qty * (TWO_PORT.has(baseKey(key)) ? 2 : 1);
     });
@@ -1474,14 +1480,12 @@ function stVehSafetouchTotal(){
 function updEquipSummary(){
   const host=document.getElementById('equipSummary'); if(!host) return;
   const agg={};
-  const ad=its=>Object.entries(its||{}).forEach(([k,q])=>{ if(q>0) agg[k]=(agg[k]||0)+q; });
+  const ad=its=>Object.entries(its||{}).forEach(([k,q])=>{ if(q>0 && !SUMMARY_HIDE.has(baseKey(k))) agg[k]=(agg[k]||0)+q; });
   ad(baseSector.items); sectors.forEach(s=>ad(s.items));
   const entries=Object.entries(agg).sort((a,b)=>b[1]-a[1]);
   if(!entries.length){ host.innerHTML='<div style="font-size:10px;color:var(--mt);font-style:italic">Sin equipos cargados</div>'; return; }
   let total=0;
   let rows=entries.map(([k,q])=>{ total+=q; const lb=lbOf(k); return '<div class="sw-row"><span>'+lb+'</span><span class="sw-val">'+q+'</span></div>'; }).join('');
-  const stVeh=stVehSafetouchTotal();
-  if(stVeh>0){ total+=stVeh; rows+='<div class="sw-row"><span>Safetouch (en Pilar)</span><span class="sw-val">'+stVeh+'</span></div>'; }
   rows+='<div class="sw-row"><span>Total equipos</span><span class="sw-val">'+total+'</span></div>';
   host.innerHTML=rows;
 }
@@ -3229,7 +3233,7 @@ function printProyecto(){
 }
 function printEquipSummary(){
   const agg={};
-  const add=o=>Object.entries(o||{}).forEach(([k,q])=>{ if(q>0) agg[k]=(agg[k]||0)+q; });
+  const add=o=>Object.entries(o||{}).forEach(([k,q])=>{ if(q>0 && !SUMMARY_HIDE.has(baseKey(k))) agg[k]=(agg[k]||0)+q; });
   add(baseSector.items); sectors.forEach(s=>add(s.items));
   const keys=Object.keys(agg);
   if(!keys.length) return '';
@@ -3238,8 +3242,6 @@ function printEquipSummary(){
   let total=0;
   let r='<table class="pt"><tr><th>Equipo</th><th>Cant. total</th></tr>';
   keys.forEach(k=>{ total+=agg[k]; r+='<tr><td>'+_pesc(_lblOf(k))+'</td><td>'+agg[k]+'</td></tr>'; });
-  const stVeh=stVehSafetouchTotal();
-  if(stVeh>0){ total+=stVeh; r+='<tr><td>Safetouch (en Pilar)</td><td>'+stVeh+'</td></tr>'; }
   r+='<tr><td style="font-weight:800;background:#fff7ed">TOTAL DE EQUIPOS</td><td style="font-weight:800;background:#fff7ed">'+total+'</td></tr></table>';
   return _pCard('📦 Resumen de Equipos — total por tipo (para presupuesto)', r);
 }
