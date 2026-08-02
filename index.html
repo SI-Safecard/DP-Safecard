@@ -3417,11 +3417,38 @@ function buildPrintDoc(){
   body+=_pSection('Conformidad')+printFirmas();
   return '<style>'+PRINT_CSS+'</style>'+head+body;
 }
+function isStandaloneApp(){
+  try{
+    return (window.navigator && window.navigator.standalone === true)
+      || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  }catch(e){ return false; }
+}
 function exportPDF(){
   const root=document.getElementById('printRoot'); if(!root) return;
   const docHtml = buildPrintDoc();
-  // Método robusto en desktop: abrir el informe en una pestaña NUEVA de verdad, donde
-  // Guardar como PDF / Imprimir funciona sin afectar la app original.
+  const nm=((typeof v==='function'?v('p_rec'):'')||'Informe_Safecard').replace(/[^a-z0-9]+/gi,'_').slice(0,40)||'Informe';
+
+  // App instalada en la pantalla de inicio (modo standalone): acá ni abrir una ventana nueva
+  // ni window.print() son confiables — el modo standalone no tiene barra de pestañas ni botón
+  // "atrás", así que cualquier navegación deja a la app sin forma de volver a editar.
+  // Se descarga el informe como archivo HTML (no navega ni reemplaza nada de la app en pantalla):
+  // se abre después en Safari desde Archivos, donde Compartir → Imprimir → Guardar como PDF
+  // funciona de forma normal, y esta app queda intacta y lista para seguir editando.
+  if(isStandaloneApp()){
+    try{
+      const full='<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Informe · Safecard</title><style>body{margin:0;background:#fff}@page{margin:10mm;size:A4}</style></head><body><div id="printRoot">'+docHtml+'</div></body></html>';
+      const blob=new Blob([full],{type:'text/html'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=url; a.download='Informe_'+nm+'.html'; document.body.appendChild(a); a.click();
+      setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 4000);
+      toast('📄 Informe descargado. Abrilo desde Archivos y usá Compartir → Imprimir → Guardar como PDF. La app sigue igual, podés seguir editando.', 7000);
+      return;
+    }catch(e){}
+  }
+
+  // Navegador normal (no instalado como app): abrir el informe en una pestaña NUEVA de verdad,
+  // donde Guardar como PDF / Imprimir funciona sin afectar la app original.
   let win=null;
   try { win = window.open('', '_blank'); } catch(e){ win=null; }
   const isRealNewWindow = !!(win && win!==window && win.document);
@@ -3443,12 +3470,8 @@ function exportPDF(){
     return;
   }
   if(win && win!==window){ try{ win.close(); }catch(e){} }
-  // Celular / app instalada en la pantalla de inicio: muchos navegadores móviles NO abren una
-  // pestaña nueva de verdad (window.open reutiliza la misma ventana) — usar ese camino ahí
-  // reemplazaría toda la app y era la causa de no poder volver a editar después del informe.
-  // En su lugar, se imprime usando el contenedor oculto #printRoot (display:none salvo al
-  // imprimir): no toca el resto de la app, así que al cerrar el cuadro de impresión seguís
-  // editando normalmente, sin perder nada.
+  // Respaldo: imprimir dentro de la misma app usando el contenedor oculto #printRoot
+  // (display:none salvo al imprimir) — no toca el resto de la app.
   root.innerHTML=docHtml;
   toast('🖨️ Abriendo impresión… al cerrar el cuadro de impresión podés seguir editando');
   setTimeout(()=>{ window.print(); }, 150);
