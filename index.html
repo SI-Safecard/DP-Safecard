@@ -243,10 +243,17 @@ table.mtx td.mx-num{color:var(--tx);font-weight:600;min-width:48px}
 
 /* ── PDF / PRINT ── */
 #printRoot{display:none}
+#printRoot.pv{display:block;position:fixed;inset:0;z-index:99999;background:#fff;overflow:auto;-webkit-overflow-scrolling:touch}
+.pv-bar{position:sticky;top:0;z-index:2;background:#E8541A;padding:10px 12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.pv-bar button{border:none;border-radius:8px;padding:10px 14px;font-size:13px;font-weight:800;font-family:system-ui,-apple-system,sans-serif;cursor:pointer}
+.pv-bar .pv-print{background:#fff;color:#E8541A}
+.pv-bar .pv-dl{background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.4)!important}
+.pv-bar .pv-close{background:rgba(0,0,0,.25);color:#fff}
 @media print{
   html,body{overflow:visible!important;height:auto!important;background:#fff!important}
   body>header,body>.prog,body>.app,body>.toast{display:none!important}
-  #printRoot{display:block!important}
+  #printRoot{display:block!important;position:static!important;inset:auto!important}
+  .pv-bar{display:none!important}
   @page{margin:10mm;size:A4}
 }
 </style>
@@ -1900,10 +1907,9 @@ function buildDiagramPrint(){
 function exportDiagramPDF(){
   const svg=document.getElementById('diagSvg');
   if(!svg || !svg.getAttribute('width')){ toast('⚠️ Generá el diagrama primero'); return; }
-  const root=document.getElementById('printRoot'); if(!root) return;
-  root.innerHTML=buildDiagramPrint();
-  toast('📄 Abriendo impresión del diagrama…');
-  setTimeout(()=>{ window.print(); }, 80);
+  const nm=((typeof v==='function'?v('p_rec'):'')||'Diagrama_Safecard');
+  showPrintPreview(buildDiagramPrint(), 'Diagrama_'+nm);
+  toast('👀 Vista previa del diagrama — imprimí o tocá "✕ Cerrar" para volver a editar');
 }
 
 function v(id){return document.getElementById(id)?.value||'';}
@@ -3417,64 +3423,44 @@ function buildPrintDoc(){
   body+=_pSection('Conformidad')+printFirmas();
   return '<style>'+PRINT_CSS+'</style>'+head+body;
 }
-function isStandaloneApp(){
+// ── Vista previa de impresión (informe / matriz / diagrama) ──────────────────
+// Se muestra DENTRO de la misma app (sin abrir ventanas ni navegar a ningún lado),
+// así en el celular / app instalada en pantalla de inicio siempre hay forma de
+// volver a editar con el botón "✕ Cerrar", sin importar si window.print() funciona
+// o no en ese navegador.
+function showPrintPreview(contentHtml, filenameBase){
+  const root=document.getElementById('printRoot'); if(!root) return;
+  const nm=(filenameBase||'Informe').replace(/[^a-z0-9]+/gi,'_').slice(0,40)||'Informe';
+  root.innerHTML = '<div class="pv-bar no-print">'
+    +'<button class="pv-print" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>'
+    +'<button class="pv-dl" onclick="downloadPrintPreview(\''+nm+'\')">⬇️ Descargar HTML</button>'
+    +'<button class="pv-close" onclick="closePrintPreview()">✕ Cerrar</button>'
+    +'</div><div id="pvBody">'+contentHtml+'</div>';
+  root.classList.add('pv');
+  try{ window.scrollTo(0,0); }catch(e){}
+}
+function closePrintPreview(){
+  const root=document.getElementById('printRoot'); if(!root) return;
+  root.classList.remove('pv');
+  root.innerHTML='';
+}
+function downloadPrintPreview(nm){
+  const body=document.getElementById('pvBody'); if(!body) return;
   try{
-    return (window.navigator && window.navigator.standalone === true)
-      || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
-  }catch(e){ return false; }
+    const full='<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Informe · Safecard</title><style>body{margin:0;background:#fff}@page{margin:10mm;size:A4}</style></head><body>'+body.innerHTML+'</body></html>';
+    const blob=new Blob([full],{type:'text/html'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=(nm||'Informe')+'.html'; document.body.appendChild(a); a.click();
+    setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 4000);
+    toast('📄 Descargado. Abrilo desde Archivos y usá Compartir → Imprimir → Guardar como PDF.', 6000);
+  }catch(e){ toast('⚠️ No se pudo descargar'); }
 }
 function exportPDF(){
-  const root=document.getElementById('printRoot'); if(!root) return;
   const docHtml = buildPrintDoc();
-  const nm=((typeof v==='function'?v('p_rec'):'')||'Informe_Safecard').replace(/[^a-z0-9]+/gi,'_').slice(0,40)||'Informe';
-
-  // App instalada en la pantalla de inicio (modo standalone): acá ni abrir una ventana nueva
-  // ni window.print() son confiables — el modo standalone no tiene barra de pestañas ni botón
-  // "atrás", así que cualquier navegación deja a la app sin forma de volver a editar.
-  // Se descarga el informe como archivo HTML (no navega ni reemplaza nada de la app en pantalla):
-  // se abre después en Safari desde Archivos, donde Compartir → Imprimir → Guardar como PDF
-  // funciona de forma normal, y esta app queda intacta y lista para seguir editando.
-  if(isStandaloneApp()){
-    try{
-      const full='<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Informe · Safecard</title><style>body{margin:0;background:#fff}@page{margin:10mm;size:A4}</style></head><body><div id="printRoot">'+docHtml+'</div></body></html>';
-      const blob=new Blob([full],{type:'text/html'});
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement('a');
-      a.href=url; a.download='Informe_'+nm+'.html'; document.body.appendChild(a); a.click();
-      setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 4000);
-      toast('📄 Informe descargado. Abrilo desde Archivos y usá Compartir → Imprimir → Guardar como PDF. La app sigue igual, podés seguir editando.', 7000);
-      return;
-    }catch(e){}
-  }
-
-  // Navegador normal (no instalado como app): abrir el informe en una pestaña NUEVA de verdad,
-  // donde Guardar como PDF / Imprimir funciona sin afectar la app original.
-  let win=null;
-  try { win = window.open('', '_blank'); } catch(e){ win=null; }
-  const isRealNewWindow = !!(win && win!==window && win.document);
-  if(isRealNewWindow){
-    const page = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">'
-      +'<meta name="viewport" content="width=device-width,initial-scale=1">'
-      +'<title>Informe · Safecard</title>'
-      +'<style>body{margin:0;background:#fff}@page{margin:10mm;size:A4}'
-      +'.sc-print-bar{position:sticky;top:0;z-index:9999;background:#E8541A;padding:10px 12px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.15)}'
-      +'.sc-print-bar button{background:#fff;color:#E8541A;border:none;border-radius:8px;padding:11px 20px;font-size:15px;font-weight:800;font-family:system-ui,-apple-system,sans-serif;cursor:pointer}'
-      +'.sc-print-tip{color:#fff;font-size:11px;font-family:system-ui,-apple-system,sans-serif;margin-top:7px;line-height:1.4;max-width:640px;margin-left:auto;margin-right:auto}'
-      +'@media print{.sc-print-bar{display:none!important}}</style></head><body>'
-      +'<div class="sc-print-bar"><button onclick="window.print()">🖨️ Guardar / Imprimir PDF</button>'
-      +'<div class="sc-print-tip">Para un PDF limpio (sin fecha arriba ni “about:blank” abajo), en el cuadro de impresión abrí <b>Más opciones</b> y <b>desactivá “Encabezados y pies de página”</b>.</div></div>'
-      +'<div id="printRoot">'+docHtml+'</div></body></html>';
-    win.document.open(); win.document.write(page); win.document.close();
-    toast('🖨️ Informe abierto en pestaña nueva — tocá "Guardar / Imprimir PDF"');
-    setTimeout(()=>{ try{ win.focus(); win.print(); }catch(e){} }, 700);
-    return;
-  }
-  if(win && win!==window){ try{ win.close(); }catch(e){} }
-  // Respaldo: imprimir dentro de la misma app usando el contenedor oculto #printRoot
-  // (display:none salvo al imprimir) — no toca el resto de la app.
-  root.innerHTML=docHtml;
-  toast('🖨️ Abriendo impresión… al cerrar el cuadro de impresión podés seguir editando');
-  setTimeout(()=>{ window.print(); }, 150);
+  const nm=((typeof v==='function'?v('p_rec'):'')||'Informe_Safecard');
+  showPrintPreview(docHtml, 'Informe_'+nm);
+  toast('👀 Vista previa del informe — imprimí o tocá "✕ Cerrar" para volver a editar');
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -3625,11 +3611,10 @@ function buildMatrixPrint(){
   return css+'<div class="mxh">'+_pesc(rec||'Resumen de Equipos')+'</div>'+t+printSectorSummary()+u;
 }
 function exportMatrizPDF(){
-  const root=document.getElementById('printRoot'); if(!root) return;
   if(!matrixRows().length && !sectors.length){ toast('⚠️ No hay equipos ni accesos para exportar'); return; }
-  root.innerHTML=buildMatrixPrint();
-  toast('📄 Abriendo impresión de la matriz…');
-  setTimeout(()=>{ window.print(); }, 80);
+  const nm=((typeof v==='function'?v('p_rec'):'')||'Matriz_Safecard');
+  showPrintPreview(buildMatrixPrint(), 'Matriz_'+nm);
+  toast('👀 Vista previa de la matriz — imprimí o tocá "✕ Cerrar" para volver a editar');
 }
 
 // ══ INIT ══════════════════════════════════════════════════════════════════
