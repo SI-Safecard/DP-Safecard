@@ -3420,11 +3420,12 @@ function buildPrintDoc(){
 function exportPDF(){
   const root=document.getElementById('printRoot'); if(!root) return;
   const docHtml = buildPrintDoc();
-  // Método robusto (tablet / app instalada / iOS): abrir el informe en una pestaña del navegador,
-  // donde Guardar como PDF / Imprimir sí funciona. window.print() de la app no funciona en PWA iOS.
+  // Método robusto en desktop: abrir el informe en una pestaña NUEVA de verdad, donde
+  // Guardar como PDF / Imprimir funciona sin afectar la app original.
   let win=null;
   try { win = window.open('', '_blank'); } catch(e){ win=null; }
-  if(win && win.document){
+  const isRealNewWindow = !!(win && win!==window && win.document);
+  if(isRealNewWindow){
     const page = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">'
       +'<meta name="viewport" content="width=device-width,initial-scale=1">'
       +'<title>Informe · Safecard</title>'
@@ -3441,22 +3442,16 @@ function exportPDF(){
     setTimeout(()=>{ try{ win.focus(); win.print(); }catch(e){} }, 700);
     return;
   }
-  // Respaldo (pop-ups bloqueados / tablet): descargar el informe como archivo HTML para abrir y guardar como PDF
-  try{
-    const full='<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Informe · Safecard</title><style>body{margin:0;background:#fff}@page{margin:10mm;size:A4}</style></head><body><div id="printRoot">'+docHtml+'</div></body></html>';
-    const blob=new Blob([full],{type:'text/html'});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');
-    const nm=((typeof v==='function'?v('p_rec'):'')||'Informe_Safecard').replace(/[^a-z0-9]+/gi,'_').slice(0,40)||'Informe';
-    a.href=url; a.download='Informe_'+nm+'.html'; document.body.appendChild(a); a.click();
-    setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 4000);
-    toast('📄 Informe descargado. Abrilo y usá Compartir → Imprimir → Guardar como PDF.', 6000);
-    return;
-  }catch(e){}
-  // Último respaldo: impresión en la misma página
+  if(win && win!==window){ try{ win.close(); }catch(e){} }
+  // Celular / app instalada en la pantalla de inicio: muchos navegadores móviles NO abren una
+  // pestaña nueva de verdad (window.open reutiliza la misma ventana) — usar ese camino ahí
+  // reemplazaría toda la app y era la causa de no poder volver a editar después del informe.
+  // En su lugar, se imprime usando el contenedor oculto #printRoot (display:none salvo al
+  // imprimir): no toca el resto de la app, así que al cerrar el cuadro de impresión seguís
+  // editando normalmente, sin perder nada.
   root.innerHTML=docHtml;
-  toast('🖨️ Abriendo impresión…');
-  setTimeout(()=>{ window.print(); }, 120);
+  toast('🖨️ Abriendo impresión… al cerrar el cuadro de impresión podés seguir editando');
+  setTimeout(()=>{ window.print(); }, 150);
 }
 
 // ══════════════════════════════════════════════════════════════════════════
