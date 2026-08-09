@@ -298,10 +298,15 @@ table.mtx td.mx-num{color:var(--tx);font-weight:600;min-width:48px}
     <!-- DATOS DEL PROYECTO -->
     <div class="sec">
       <div class="st">📍 Datos del Proyecto</div>
-      <div class="fg g2" style="margin-bottom:8px">
-        <div class="f"><label>ID Proyecto</label>
-          <input id="p_id" type="text" placeholder="Ej: SC-2026-0142">
+      <div class="fg g2" style="margin-bottom:10px;padding:10px;background:#E8541A0D;border:1px solid #E8541A40;border-radius:8px">
+        <div class="f"><label style="color:var(--br);font-weight:700">🏷️ ID Proyecto</label>
+          <input id="p_id" type="text" placeholder="Ej: SC-2026-0142" style="font-weight:700">
         </div>
+        <div class="f"><label style="color:var(--br);font-weight:700">💰 Presupuesto cerrado (UF)</label>
+          <input id="p_uf" type="number" min="0" step="0.01" placeholder="Ej: 850" style="font-weight:700;color:var(--br)">
+        </div>
+      </div>
+      <div class="fg g2" style="margin-bottom:8px">
         <div class="f"><label>Nombre del Proyecto / Recinto</label>
           <input id="p_rec" type="text" placeholder="Ej: Edificio Alonso de Córdova 2700" oninput="upProg()">
         </div>
@@ -341,7 +346,7 @@ table.mtx td.mx-num{color:var(--tx);font-weight:600;min-width:48px}
           </select>
         </div>
       </div>
-      <div class="fg g3">
+      <div class="fg g2">
         <div class="f"><label>Fecha de Visita</label>
           <input id="p_fec" type="date" style="color-scheme:dark" onchange="calcPlazoEntrega()">
         </div>
@@ -643,8 +648,7 @@ table.mtx td.mx-num{color:var(--tx);font-weight:600;min-width:48px}
         <div class="f">
           <label>Cantidad de propiedades</label>
           <input id="p_props" type="number" min="0" placeholder="0"
-            style="font-size:16px;font-weight:700;color:var(--br)" oninput="calcFee()">
-          <small id="fee-calc" style="font-size:9px;color:var(--mt);margin-top:2px"></small>
+            style="font-size:16px;font-weight:700;color:var(--br)">
         </div>
 
       </div>
@@ -797,6 +801,10 @@ table.mtx td.mx-num{color:var(--tx);font-weight:600;min-width:48px}
           <input type="number" min="0" step="1" id="t_fibra" placeholder="0" oninput="techSet('fibra',this.value)">
           <div class="tramo"><input type="number" min="0" step="0.1" inputmode="decimal" id="tr_fibra" placeholder="+ tramo (m)" onkeydown="if(event.key==='Enter')sumTramo('t_fibra','tr_fibra','fibra')"><button type="button" onclick="sumTramo('t_fibra','tr_fibra','fibra')">➕ Sumar</button></div>
         </div>
+        <div class="f"><label>Cableado 220V (m)</label>
+          <input type="number" min="0" step="1" id="t_c220" placeholder="0" oninput="techSet('c220',this.value)">
+          <div class="tramo"><input type="number" min="0" step="0.1" inputmode="decimal" id="tr_c220" placeholder="+ tramo (m)" onkeydown="if(event.key==='Enter')sumTramo('t_c220','tr_c220','c220')"><button type="button" onclick="sumTramo('t_c220','tr_c220','c220')">➕ Sumar</button></div>
+        </div>
       </div>
       <div class="fg g2">
         <div class="f"><label>EMT (m)</label>
@@ -808,14 +816,17 @@ table.mtx td.mx-num{color:var(--tx);font-weight:600;min-width:48px}
             <option value="">— Medida —</option><option>20 mm</option><option>25 mm</option>
           </select>
         </div>
-        <div class="f"><label>PVC (m)</label>
-          <input type="number" min="0" step="1" id="t_pvc" placeholder="0" oninput="techSet('pvc',this.value)">
-          <div class="tramo"><input type="number" min="0" step="0.1" inputmode="decimal" id="tr_pvc" placeholder="+ tramo (m)" onkeydown="if(event.key==='Enter')sumTramo('t_pvc','tr_pvc','pvc')"><button type="button" onclick="sumTramo('t_pvc','tr_pvc','pvc')">➕ Sumar</button></div>
+        <div class="f"><label>PVC 20 mm (m)</label>
+          <input type="number" min="0" step="1" id="t_pvc20" placeholder="0" oninput="techSet('pvc20',this.value)">
+          <div class="tramo"><input type="number" min="0" step="0.1" inputmode="decimal" id="tr_pvc20" placeholder="+ tramo (m)" onkeydown="if(event.key==='Enter')sumTramo('t_pvc20','tr_pvc20','pvc20')"><button type="button" onclick="sumTramo('t_pvc20','tr_pvc20','pvc20')">➕ Sumar</button></div>
         </div>
-        <div class="f"><label>PVC — Medida</label>
-          <select id="t_pvcmed" onchange="techSet('pvcMed',this.value)">
-            <option value="">— Medida —</option><option>20 mm</option><option>25 mm</option>
-          </select>
+        <div class="f"><label>PVC 25 mm (m)</label>
+          <input type="number" min="0" step="1" id="t_pvc25" placeholder="0" oninput="techSet('pvc25',this.value)">
+          <div class="tramo"><input type="number" min="0" step="0.1" inputmode="decimal" id="tr_pvc25" placeholder="+ tramo (m)" onkeydown="if(event.key==='Enter')sumTramo('t_pvc25','tr_pvc25','pvc25')"><button type="button" onclick="sumTramo('t_pvc25','tr_pvc25','pvc25')">➕ Sumar</button></div>
+        </div>
+        <div class="f"><label>Soterrado (m)</label>
+          <input type="number" min="0" step="1" id="t_soterrado" placeholder="0" oninput="techSet('soterrado',this.value)">
+          <div class="tramo"><input type="number" min="0" step="0.1" inputmode="decimal" id="tr_soterrado" placeholder="+ tramo (m)" onkeydown="if(event.key==='Enter')sumTramo('t_soterrado','tr_soterrado','soterrado')"><button type="button" onclick="sumTramo('t_soterrado','tr_soterrado','soterrado')">➕ Sumar</button></div>
         </div>
       </div>
     </div>
@@ -964,6 +975,10 @@ const IMGS = {
   tablet_zebra: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHEAAABQCAYAAAAujppDAAAV4klEQVR4nO2d249kx33fP79fVZ1Ld0/PzM7u7M7wJpIWFTKhTBmKQ9hKglysyEpeFAMGAgMGEiBS/oAoyWOQp+TBAXLxS4LEouPYkBQJhpKHOIoDR4gikxYZU9SKoc3rcpdL7u7sXHqm+/Q5VfXLw+ldEjBlJ+HA7AbmC/Tb6cs5n66qX/1uJWZmnGmlpR/2DzjTB5f/sH/AaerOpPJBJhcRQURO6yf9sWilIZoZOWcAVPXuwz8NCCmlu5+lutwTlqzimmhmmNkfeLiTyYSjoyMmk8nd0fhHAX3vdcPhkPF4zPr6+g+9Zhm1khDv6O133uHp336a7z77LFevXuXNN9/k8PCQ2WwKCF3XcXh40EN4DwgzQ0TIZozXxgyHQ8Aoi5K18Rr33HsfOzs7PProo/zZT32Khx9+CODu+5ZNKwXxzkNs25Z/8Yu/yFe//Gvcevs6ZpkQAt57vAuo08X1MG9bRD0aAjkbWEKdI8VI7DpCERBVLGfMQMVI3ZyuaclijMYb/OWf+mm++Pf+LjuXdpYS5MpBNDO++A++yK/+8lNcuvRRdPs+TBQMskWcgQgoGTC8V7rphNneFdbG53C+5PD2ddbGW5zfvhc6QxSEjCfyzjRz2Hp88Hj1pMMb3Lh6mY9/4sf4d7/yy2xungOWa2pdGcMm54yq8u3vPM3XvvJrXPzRz/DWT/4jphv3UfZDiOAF741CYeRg3RubTqg4YvKtf8vRd7+KpY4Hn/hL/Mzf+PvsXLiHhy8kSgc+Kmsy4anvzXlxVvKOKZV6PuaPeObr/5xnv/lLfOU/fJ2/8/m/TUoJ59yH/UjuamUg3pkwXnzpB/gE+4/9PDe3HsLPMnOvaAaXQTMEgWmCRqAVGIct7vnMF1m753GkucWPf+pnYViw3xhX9mGzNNbUYVbz53cjz3w/c3U2YFDB7toOl/7k36J85ms8//xzwHKNQlghiHfUdnPMl+DOo7NMskzOAg4kwzhCbSAOcjZiEhozbkVh5/HPMK7gsAOZZNZr4faJYkkgGPPkOGeeey3zrX1la0O5mYyBGxLKEbGJwBnED6yu6zADZ5GhKZIjcyeYKd6EhNEieDGiKTFDFKHF2Jsmug7wiveKRFAB7Ywgwpp6JrnmL+xO+db+HJOSonSMq4SS7+5Jl00rB1GyAInKjA0zzBI5C4IhorQm+AwhgyeTRclmJBNaHPMMJ2b4bEgEL4IKlArB9+bNduX5+KjlchMQhZEHRehy+rBv/321chCxfvswyh0hd2TryJbJ5jAcA1MkCyEJTgVnoAaysFoxiBnmCmUSOoFGhKlCrYbhKcX4+Ibw6g3DOQjeUATjbCSeigwwUYbSUdGR6dcpBLJlOlUQhxMhmPZbDvobdYDJ4mIgGUTr181ZgiYKXmGiAx4anLDjp5RU4DMi+QziacksIRhr1qF5RqLD6PePCYdmIbtEdIYXRSWAQi2J2jyF3UEIzgxMMINoMM9QCYh6xlXggXrOEZlKoP/7LKdWDqIaGMqQlkqmRBKQMQKmAVxiJuA6TyyVIJEaYy6OwiU8SiURb0pUR0c/18asRDMSUKpgzvFAnXhZIuqEnA1huazSO1o5iNCPiYo5m9oQyf3ewmeyJrIIH9kQHrzkeeFN5cGLmbUaXr1dsX9csjue8MAFA/Fc33Pct5HZGgmTY2jbiugBheyVnSJz01qcd0sLEFYUIsBQp2zIjM5AF7v85D2igVEUhk547IJiGd6+EXjsUuSaJNaGwrU9uLCWeGTbcChvvq38yG7kxr5hKKjhvDAqSrbSHIrcW0WynFPqykE0BDFjzJQNPaYTUF+jPpNchBBp2xLfBs6FlsNGqemocVQ4mgPPA1stu+uZvRNhUDu8OUqgCoYTQ1XwwaFVwc58xs3UAIouaSLEykEUywjCUKasy4ROHeoS6grMFzhXE11koxC6TvADT5lbRkVFmSJbFwLzqWNyBJe2Im2rjAuj0ERFwPveQi2ckivPugnHqaMfoMs5pa4cRGRhfMgxa3pAJx6VCrRAXY34CAR8VKazzPlzgYtrNQdHc+7fEpxvGV8sURwH+8L6sGNjJ9POPLUYThPBKYUDK4WclLrpSCSQs5F4KhIRDKOyI0bcptOAcwPEDRCXUD9HtCQfdAx9yWy/QX0kEFA8JEeMDVkKgpakqdDFRJaCQdHhVfGaUC+4ygjZsXfU9WaNLk/k4r1aSYgiUNgRFTdRGeAk4l0GH3FaYD7iQkY1kssasxZjjoYKVQd4XHC4MEVyiTrFdIZTJWjo10SvBNcbPrWC5ry0FuoKQlRMoOSAKnvU1vDWoMxwMkS0QnyF+jlIQVUZZTViPs9IaCnqIZaElOZoGejaGeo8qoKKwzsQFZwIhVN8rVRl/5iWNX6+ehC1n059N6PM+0hu8MxRZqjMcDpEdIBIg/MldA3JjghaYMmTZid4VwEOYqD0BU4DznlUDKf9dyhCUEcIgbIKgCFnW4zTkWVBEDaHV/DdRbKuE/IMZQ3HDGWOyAyVCq8DcBWmM3ABcTWic1TmiCvBFYgm1PXTsEqBakJEUfGoN0LpqGtBJZPsLIpxKhKLkIT7dl7l/sFtXr/xEUJdommGSwNcnqA2RGWASI26AebK3nJ1M0Rr0IBqiejCqtUK0RKnJeIUVY+IQwAXoKgTsLxJxSsHMYlDzJEnytr919jNJ+yd3IsrG9RKlBLNQ9xdkENUakQqTAMqFaoDkAqRGnEVoh2qHepbRAMioQdpgPP4ItEHo5ZTKwcxWwMyJ7+2DpsTzl24TXAzbs830fICkgvUTlAq1AaI1TipQSpMSryWPTzttyXoANUKdXUPVwtUAqJFH7eQiLiGvKTeGlhBiJoyokJ3McLrSp4J43tmiDbsN4fgKzQUuDxA8znEPI4BwhCjwlkB1DgZAhVYjcgQp+vAWj8KpQIJfSqkzEEnvZN9ScNRKwfRVMlRcX/iGNRonh5QMmNtN5HmJxw3JxDAnIK+g/gCSWU/reY11JXAAGSMyHAxrQZU1kDOgQwwVyNS9pt7HWI0YBEny/m4lvNX/SEyMUyM5nrC/nRCPzmne67ExY6N3RYfhekJmMugx+D6jA4REHWgHskByUNUhmAj1NYhryPuHNg65AHmKyAAA6BDiGfW6WlJbJFm4xzNa5DWI+EJz8nvDqjTgOHuAbkTpo2wyNTorxdAE0pC/BzJxz1YAbECcgk6BBsAY4R1jBHICKwC0bP0jFNTTpAz+mjCDYTps4I/31A8GpldrqkoWduOpGmmE8MJff6NgGnvsnOpZ9pDNCS2mLaYTvrvcCxcbAV9He4GyACfz3ynpyITDwjxBPTxPl1j+qxjUBrh4ZbmlYpB6li/0HCYhLlliix9Pg2G0adaWBbUDPECvs8/JfWBX8lg0RCZQwZhDuyS5AziqcipAxztrZb2dcNtGDyZaf7HiCJ3hN1Mc02pZMDw3IzuCFJe5KsmQxMQQLzRp+cYLi8q32xhhGKLaVgh9l4iQzE7m05PRXbHzD94gPbaVVp3Qnke/I8d0n4HipOAH3maazDIjvXNwFFqyVnw2bBs5CC4YFCAJDC/ABwMvPR5jYVhLiOpn4v7TMezLcapKCOodXQf/Zc0j91PnL6KsA/uNfxP/R7N7x5RNDcRf5OjaxOqbo+ygukByBhsBL3DRtACLBi5MDQKdPSjNIFmAW/gDWkFl/VO0urSafUgdhEkc1LdQ7P2OLF4jBgcTgzvE/6jc+Z5Qh0P8NObWDymTlfJt7+HzZ4lx5ex7jZ5lkkNeCe40pDKIAhS0E+hkb68yhvWKRlD8nJ6bVYOoki/JloXaVsjty0qQuE7AkahNaG+hNMtZNjhjn+f3D3Nev0S4q5j0mBpYeR2kA8h7wv5CHwALQ1KgcqQIL1x2rh3zdkl1MpBzGaAoto/dEOoS4cfVP2G4OB/w1vfRK99A50+i9g+vgALYCVQghagtUBpsCbYGOIB2A3IM0FrsE6gXHCb9hnm6JlhcyrKi9r6ooBhLaSyQtsWnv/PyA++SvH2fyXEKzACqYDSQbewRhvrCzK89XfugcKQCsJQYBu6m/Sjsl1AzyBNH8OQM+v0dNQ3PjCMAenWjPRbX0F/+8vojefx1T666bHxNkLEuiOkTVDSe9A8mAMJQOhLxGnoR9rEkAGEdSFlSAf9iCUBTd8TYEntmtWD6CyDL/E/+Ncc/+p3aX/nRUbJE0cD4niHKkWq9jZu5HADDxUwX4AsDCmk39Sn3vLESR+cyEDs10I3hByFeFsoFnWM7/rulk8rB7GoanKKXOr+DQ//lQnTT42Qw8jsjRnxypDjA6GZnGO4NSWsl/j5Ma5O0AlWdkiXem9a13tqCAurNLCodROsAl3rK4jtEGgLziL7p6gs4CSRL2/h3grUboqrhdG9CR48ojkuOLkC07cGuKlnsCkUaYZ2hnQlVCcQI1ZIv04uPDn0OcfgDDJYBrchSFLyG34xnZ6tiaek3m+2f6Xk+KYnFzWFxj45u4qEzY6t3TnxHuP4umN6oyI1NX69I7QejR6pZkg3g2IBMSxAGr3z23EXJOcNjiIkQ5Z0UVw5iIpDUCiEw1lDd6AMywFlGfFzTzoaINdnFJuRje1E3Drm5M2Cdr+mWutw5vFphJaC5LbfMKbcj8JMvy8MQAJbWLV6PpM9Z5v9U5OCWWTshAvnhb1ZYDJpOD4sGBYeX07ROMKaiO5Fwrax/iMds9szTt72FJ2HwRSNNT4FJM0gxsWoXGxBDLDeCc4xSAwoipxNp6eknMmqvHXouHAkhOGc0VZi3jYcHDjc3ohaMm2h+CIgRx3lnlHdm9H7E0fXjXRQUo8EzQ6JGSkCknLvwvGp38ZY3xsHAWuUhJHPDJvTkaBAy7m/aGytG+2BUcbEmnZICEgZyWnGydEYmUKIEckF3bSj3Jqz9ZGCw6sd00OlaAt8XeHrhMsZkiC+64GWEfN99ELalmDL14TojlYOIigSPePtY8YfvU1OCR0B45J2Jlz9vZrJd9eJrxnFJDPoHFURqYaQJgX+fMfoYktcg3aWsRSxWUWKESk6fFmiOWEp9mujgHUFmd4JvoxaPYiLTouyYbCTQAbcvLXFc18b8fr/FHSvZXvoGF1qGZ5vcJsd1T2K7myQu0w+nOLshCq01DIjt5mcOvLckSeOPHNYl3BV3XcokmkfolrO5RBYUYiQsI0RuS3Z/w3l+HLHQ4Ob/PhPz1m7P+MvJlirYbOAQYm9UdD9zj5ypcNNE7iK7CukjGhtaDmHYSaPPHkeSUeedGK4DhwFJMO9G45eOq0cRMNQ9bT/yxGbfcZFZutnTmA79661MkBZw3id+dvK7N932PcOKJIjlCXRLVC43uWm3pBakbWMjFq0apCLFfnE0dxqGB6UwIi0xENx9SBKJmUjxBOKn5iRNyLZZShKqIZovU5ijWvf6Jj++hHjqaNcHzD3njSLfT9NAVEFdX3njcbhTiJhaMgwI75Bh4LbrWmPhK6JQHk2Ek9LKv1GTh4xuNRhyaOjc+DPIaOK9vaMo18/Zv7fpwQLHJUOO84MJFN6RYs+o01NIReIGUKCQpB6TH3JcI/OsZ11mBwR6mPCsYCEs8YLpyZREMOCwqgGuwChRIaZg2dm7H2pob6V2dwKSNWRBGIMtNPEwbHAVChFCE5gI1FcavHbkeqehLswxz+8jqUL8O0Dir1jxGds3rddWdZVceUgCiBmMNzA6jU0OaQIvPrV2+z9kkOk5qhs0aseZwNC0VEPZ/hNYeMBJatRXDxmeJ/hNzJh06BIfZrApW1mr1fkL+9RNJFYrhOKKZLKPpioZxBPRdJT7IteBlPam55v/9M5N/9TxaAO+NBSmTIaJwbbmXrnhPWPzCnOzyg2EzIGXFz8GxTLFbCO7GwzfdFz8xf2qGJAzjlcZQzKwMmihaY7m05PR4bRCUgdOLyi/Jd/eIi9XLLzaGL93G3OXxTGO5H6fIPbAioDjUDu/a5In3BDb9hQj+H8RQ5fKnj9H9+g3hTChcQaDd4Fgvf4WGASlzQkvIoQEwT1dC+dMHv+kJ/YPGb754Sw0cCohaGHqutTMeg7bYjSR/Bd6F99U5p+K7K2iU2ntK9c5b6f9+RrSv1yIjUVbePIOTMvFcGRz5KHT0d6p0/ec29z6cEj2EhQJGyRZkiZwAviQXQRtVeHSUDUg3MgLfgRjMfkribPvs/4icDBr2yQXgg0UmBiuM3M+o921JcE+UHu1+Il1MpB7I8JEqodj+12RDV8DVL0afm41McEvfYdM8T1NRWuwsQQOgjnoD6P5QrRyxwdl1z/Z5uUVxVd7yguGpsfm1I/3OG25kzjmKR91GMZtXIQTRQD4ighQ8OpIJX2FqYLmAjiOpDBYtgq4j3oHLMNzBnUa4skmjeYzxLX/+MICXMGTybOPdhR3TOFQSKnAdQ1s86TY4OdVUWdjrLrS9IYCDZaxG+LjDhPn39v4Aa9BcpgUbK9yFOUCVRj0POI3KSNB9z62pD7h7cZfcYjxawv4/cFRoBhIg+2mH3jEBcLuiXdYixnvsEfIudg1sEbJyNkA5Ja/7JM6x5ivvXX6GRASgWRgiSOZJ4YC9qNv0q39rOkdEwbrjD5zpT1YkL9UCJWiebBv8ls4yeJDpKD7sIm02dqbn5/wAxPkLNy71ORIrgAT/3miD/zpy6yuzPrR592OO/g/MfAvwQc9H9RWSQJuxn+wgOQCyhfhRfnbLXAxyLUfY5N2L0XJkewn+HcAA4ucP2/TXhqr6KxlkLvnAa3XCe3rRxEp55RIfz+2wU/90/O89f/XGZzNMNM+8peeQplneS2kEXkQSSg/gLGb5I5IuYa9/IQXyr5tf6QKYcSf+tf9cYR28h4i73LkW++WvO6q6hch521yjwdFUVB22XO1caNg8AvfCUhttG7cgyELfqUbXm3taVBkoRaQqgQdrEi96ehmvY+UdPF9R0ZR84dLjiKyjFycNLFxWGZy9dtcWUg3pm+PvGJT1DXFfN5RxWUKsiiNsMQIKb+iAW5A6d/9+KaRb9Ukz8AQhQQwUl/cpigJNO+/DsLKSeefPLJP74b/n/Qyhg2qkrOmccff5wvfOEL/bGzzZyUhZQFcHTRUA14X6O+wPly8QqoK3GuRLVAXEB9cfflQkkXoW0zyYRsSsKTs9HlxK29W3z605/ms5/97PueZfxha6VOMoV3jYqvf/3rfOlLX+KVV15hNpvhnMM5x3A4xHt/97Tvvtb+hxshd26/6zoAmqahaRr6twm7u7t87nOf4/Of/zx1XS+dUQMrCBHeBRlj5IUXXuC5557j8uXLXLt2jclkQkqJnN89Ku/OLb73Vvs21O/CcM6hqtR1zfb2No888ghPPPEEn/zkJ++e9r2MAGFFIQI/9EjYlNIfCfG9IO7AFBGc6zsNv99n3hnZy6iVhQjvHhR95xZO65zfvhq5/8xlhndHKw3x/fRBb2fZgb2fVmaL8X+rVYTwQbVctvKZ/r/0fwDz4xWpJcWj2QAAAABJRU5ErkJggg==",
   app_safecard: "data:image/png;base64,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",
 };
+IMGS.isafe_ls = IMGS.isafe_vehicular;
+IMGS.backup_ls = IMGS.servidor_local_v2;
+IMGS.torniquete_skidata = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHEAAACgCAMAAAAMwnNoAAAAe1BMVEX+/v7v7+/X19e2t7d/gX91dnm/wMLp6emFhodmZ2dJSks8PkJeYGXHx8eWl5d6alpJTFPOz9B6cmxLUlre3+Cmp6hYWFlpbHJ3bWSOkJd+Z0+AfXutsLiJi5J+gIWYm6N6fIGDZ0ptcHaoq7NOVmBYXGKdoKg9QUc2NzrWE8NPAAAOXUlEQVR42u2b63ajuBKFjSRAIkgxChIwmMuA7eT9n/BUSeBLfIm7oXudH6NJeuU2/rxLu0olAZvN/98I/jIOxt/FEcrC6C8xgyAmlIskeUvPyOCPaYbXjaV63yZuvMszLt78ASa+bqb0B8hzwLdEZB6XU66VDPBPVgUauTE2uRoiQ6AR8GNrQxoHqzJzxaSciNZ9wCgIMIjR+AMGRPgmX40YM8Yk/SYyKQno2sDkmsx5SjGypkamMnpW6UflZw+4eWQUh3e1KpEpcp5K/OIfLnOJwcyl4cz9tx4xhvevPHLWWdNMGpjeONvB2+GAU4xnK2qckZ5Xmyyj+DOmFK+dPGSy1YiBBAUKpJgcVL4rmUWK1cxFkrGac8eDsZJzgjjO6hLloEoZEZi2GoSxSZv/yjHXIGKxgUQDfVoDszFgSla3LcQSSfUkbhqLiR6HBc40DWOhrhs0LRBx8loQ2nKkTnIZjxfzIK+NySCqRqmq4m1daCS2vG0RDMh6luekLiECLIYywmBpspxKqtxogOK8gmGt6xJ46FTu0oMt0hhIgsTKJtutY1JqTNe0dR/WvQ77WpfAqx2R1y4dwc50QSkPqgaiiROorVZgT6xidR32MMJS6/Lff11McSaniazkolkMKltwIGEJyxGsWBjW7iMs/3kvy1r3MJc+nKiyHsYlPCA2b9u0ZIqSGJiYGw7mxj//gEinFt2C+VGX1gq6jLhpkq392Kd9L0ceXo4hBNwAuAGmFAzU1mUKs22LaLHGj/3+Y7vtaaNPLPxn8B9DD9/2NeTLYbvdWnsYFhO3+3T/8bFNo2aYeYhCmIMWAK0iczjYj609HA7h0pUKiHtHpI7oSX70/ptmBy1AZNOD3QuIcL+UWH18OGIRTcTLeA5D20mXezJNU5hUrDdLo1p9bD8A+FZEYBxQ4GPpRtErOqdeBLimbXgDgy7LRwV++ADrFBStCmk/zd8QtiOZSkssDdAa94mjW7QgV8DbH9KDjjimQu+ZYd/NlSUgOyjtvOkdrIIP+FyicheKoij6fb9r2xbKCxLD6hQ4Qjtk9U1f9YCqYDTwh4vWxxwy/wDSorbwRCi0p2h2DYoD5MxrkNfyhR1y3vQtEnsAcnOq09lYQfUGcX7y+g7lYdjhrxb2AIFpq7aNWkiHJp/XoTw6IqHhVe8cU3VV70oevLt2afcYjONRNbtWpNtq+lEcdd3xOB6Rivqm4b0FYV1O3B1VO6TWemIQQevRAXCEcTx2/WkMgycurDtIHI9NX6SHyvGqFoKIGt3YHYGynzSGDtgurTvwqrtjBSIPDRimKdCb3awR3ozXh9BwiuoqxK4Ni7QiVZoWfd81IHFGHvvrsQ5xHLt2KNJ0+2mFgFd1UT2eowoK9xjVaR4X9gHBETUeUeP27dOCRsh1P49HF9azvHAi7laI6ngEjYftFxBRYoUSJ+uMc3bs5+zgC7ur+Ij26Nq2OHy8fe4herA8uKhOzNmqLiHRrf1SotOI87jffr3hhMES0Z0ljievhr7oLK45sXMORnX/8fWJclDjWeJ4ysfQpUdYLd2wnojp/vPr7dMRq0nj8azRq4RhFu6sgGimqAp0zr4Yej+L4xzWzucFLNWi1CFf2iJPxGPXQFSTr+1BuDrmg+qZlfPMIEQBrVWllmvM0aujq3IJanT5f+mcDkJZHNJQmdHAxmTxNG5yrxGiapOv5JCiG+ewHj2xsLZojHFE3pil53LxcTcTt1+JFV5jd57H/t2KmimDgxo8llhBo6ur6FWcx771NWd0gW32+38Z8pQDApEt9c4pqrB3+vo8FHORGw28jwpzAjbiTh91n4qrpZ0VVnLvnM+3LRJbv3SY47RQAY95gUCk4J2FIr1G13YkbwkQW19WDfC6HVdGqTOO4kwunUin0biofjpijy2A6ZpmzINMzfE0dP5XLzVrfsTFCqO6T94+D4MzDnSnI2Z6dMXDmNJYsYU1wHt1iuoWiBzXjmkjkANlnMKJvH+FCohYeBnEEaFHBOccoJQh8SjnlwzojtIZqFhdakaCZYdWsJvppgqQHtoYdlLNkVxIICeByh2EQqIEmVjWsBJzyg6+ubmeEXiJ1KekwoOWPGCL9nNTh4zE1Nz5tUR9DKscFhzFuTabqJSLZlJWOyyXw9Dde5kYgLlKmY8u46ZkeRCqZcSBEtkN4kH7QggNCJ5rYe4rRbmlGyrIEqTUUU6MEA8vKmRkw8sGfKObzNBI8DheVgVkSPPMFOVDYkDBntwoLVgcGaJEtKFsiUg5eI2PL9VIEjAdARHUmUxasKvSJv9tZqRB4xEEPGwn4iiQKTUhEDfgIy4MkUbjZbPfJTqN5ZOLQxGIbOggqhwaMSLd6W+kBv6bp7sRRDXrQvGk1SZoz6h+b2CdooYwMSoDTK6b30pMiho7/YyYwcxppVJc/fOKqsTk0hhJKCvUb1hIOo1aPIlqVtCNKY1w/YZsePoug5gqkxFaa/PL04kaM6XTJxolLFJSGO07nCgcbJ1hOVJUZkYPu1+cTkc0xROvbmRZ5STtJuLGQKdZ4Ze5UVCvlA5/7UCShhjV4dk80oLnkVUzEbKxTF3VCYhRUSYrMPovhNYRVfmUCDOo0qpUk5ScF1Z4XYHsnG1Flb3MdERTPptHqiURIROnXU6mtQ0nRBApZ9uye9W2k3OeeZWynB64Fuo0XRQ2P/x05kvVKMkY6vE129IyyuVzr1KTM6FEebEsqlDY8xuIwUIZ2Fa/ZKGdc45OH2/TApVlolapuNg7xiD58nuCTHjjbfQz0/io2uYhkajcWKWAcNlzhWVaXvaRslMSUkX8bFsaSoyqeHxQu6O5fqeNLa/2xxL2lfWlQQOJFgLb/lT5dhqJQ/qQGCgSWR41V1HE4ITi0Fytklj50LbaPN2aoEaMavXor2QXKztGjf1GhEIg7LdjgdhUYKFRw4L9mGhcVMF5j4iQ4WUpI/ZdI7onFd/diRYimQnrx7YdQ8yO8iExVjm1KqPKFt/PObJQW31jFKLwci1U20cWMvq5xsjELDWg0YqbDo6GIr1tssBCzrZFc7/yQVTJE40BeEFovI5uxXgTKANTeWeXHtDK2ba8a1szR/X+XPtkBCKD7Lj53+NG30yv/8WuwQWb3bOQqSMX1ea+RkpjKOFUSojqnevypL3jHs9E27pq+50J80geE6HCyXfmNYp7h8cyPC8jN+EB2xJTf7etqoFYPXIOMZCMnHnn3L33YAfu4ffb5SBD28Liy+llPQQiRNVerASXY4xyaJ6Z13iX6ArBozMeWDzRtuzt7eLgGbMjYw80xopAMgIxc8S7rxpz2M0/zPeYNkayr6+LzamqIV/5+32iNDFs3zij0UONuIwUVj8+jogNT76Si1dXDCuEfb8XGJ+MeTNH9cFrUmhC6icLBuHp5VUZxSBXG5ve05ib2FgTMDbKJxp9P6metRxXv3JEnt6d/GiEdkNuGN67o5P3h8S4CW+WkcdjIt6LKrYblsWOONa2eHxnDmFYCF7s5aao3nMOwaCOm8BprO2zcxwJWwP9YpvsNd6dR9ieakE80YT2qYgRDMtf61grhikq7hBhdxrZKtjgdhXmETQ+8wYUglS91LA+1phhhYOMCFjlNBZPowaFIE1fcg+vowdEaDdECX4Kak6hj0jK5+dxJNSpfqFd3TSgkXIrboixiqHCbTzRa3z+ShGkCMt+RnIf1fcbIlQ4ZqUjMiQm+gdiYHRpm59PXRyR3WoMDCRjiO84CME5eIPbT6eccTOIw8/3tlQ+qjf5SDqscO6FNBLLj+HHc1UoBOLuEebVcPPI0vfvfTS0G5iMjqhoZAr7wk1WMiz1j5cKOPcau+u/DPCoqAk8EbOj+HEecWQvbJW9xpt5nJPxFFX9isaXBvfE78lrZF7qfHPSqMpkLSK7q9Eno49QPEAvZ8TaGr8RIRkbOxFyjGr3knNeGYFzDm4qrojQUKfhfJgiFEbV1mtFlWfYqF3X1XMyTsSoE8laN5K7eayhyl06B1ZGJmZAXlQ0Ulgz14kqEDMgppdRhWTMLJ8zi2AFgKiG69y6DvOIh5bWXhIvktFFtUGNyVqPWYRe49WeDHv/8vT6pESN1q5EDEKWfSfG5pyMSETnqHfL1nl4BRY/PJa9ykeXjOcu2mtM14pqEPIbja73vzgBcxpFstJDD0B0GtPuhMhNTpOLVS4Tfh5XepQEidgaXlRy3IinF6/uiWI1Yg0ax/AiqpiM6eXlaemqnF03qjiPsxNd73+5cZPvK2eHn8ezRmw3iqsCJAx0HRa8+rtXqq5GjPNodHI6kg6w928uHgqMKTOoMVEkiFdgBroCjeH58NRVOHnCxUHgiMZnBz7vslTjwCO3cZrnEdqNYkpG98zjRIR8VLl7Tm8pMx4a6YnzbQ5z7+8e3nFPIuJ1a5O6KodE0r2yu3hM1CqSzjleI1WE2+zMQ6ICojud9JpztejW+XhgQCzsfMGGcJHoPPZAF1dCFSBVWZo8cI/rqXFRmkCjBsQyKed5DDLGJtr0oBI1SNTMgEYyqmX36QOxYJdRDW5GnFF/hwUzWWS6Zbc7TPMopZoqgM+Ga2BOPJHjnWuL7jw4EZmMsAKYOAiuce5psziXjthoRtdZkXMBUVUFRvW7vMBpJhneKsPUao9Dx8Jt1bzGO7MYE0mB9/rVxReILIqUfkiEbFwrnDOxZJR2j4iQfCpaZcU4A2UBRHCOvUPE3F8xnI5H4szdeqOTlMbXVo0JJP56jx77IZXJCYN8NHWSThonaizN4uJyOwLa0Dzj7tLCieh5eKD+Rx7OJ5jaSAwTQU/EPxHOC6aqYZNPuS0nYiy7at1suBlZxYzhaU2x5mA2LHum8qUhmzrUnJIYV/s1avXPI5C84FyZlYvLcyZlsI/88+G8Yv6dcP43/hu/Pv4H5QFr8p3rGI4AAAAASUVORK5CYII=";
+IMGS.sensor_puertas = "data:image/png;base64,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";
 
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -973,7 +988,7 @@ const IMGS = {
 const PAL=['#E8541A','#3B82F6','#22C55E','#A855F7','#F59E0B','#06B6D4','#EC4899','#64748B','#EF4444','#14B8A6'];
 
 // Equipos que son "Base de Red" — siempre van en la sección de infraestructura
-const BASE_KEYS=new Set(['internet','servidor_local_v2','servidor_local','router_3g_5g','switch_24p','switch_8p','switch_4p']);
+const BASE_KEYS=new Set(['internet','servidor_local_v2','servidor_local','backup_ls','router_3g_5g','switch_24p','switch_8p','switch_4p']);
 const SPEEDGATE_KEYS=new Set(['speedgate','speedgate_doble']);
 function hasSpeedgate(){
   const any=o=>Object.entries(o||{}).some(([k,q])=>q>0 && SPEEDGATE_KEYS.has(baseKey(k)));
@@ -1012,7 +1027,7 @@ function updTorniState(){
 const CATS={
   '⚙️ Base Red': [
     {key:'internet',lb:'Internet'},{key:'servidor_local_v2',lb:'Servidor V2'},
-    {key:'servidor_local',lb:'Servidor V1'},{key:'router_3g_5g',lb:'Router 3G/5G'},
+    {key:'servidor_local',lb:'Servidor V1'},{key:'backup_ls',lb:'Backup LS'},{key:'router_3g_5g',lb:'Router 3G/5G'},
     {key:'switch_24p',lb:'Switch 24P'},{key:'switch_8p',lb:'Switch 8P'},{key:'switch_4p',lb:'Switch 4P'}
   ],
   '🌐 Conectividad': [
@@ -1025,16 +1040,19 @@ const CATS={
     {key:'face_id_speedgate',lb:'Face ID SG'},{key:'boton_notouch',lb:'No Touch'}
   ],
   '🚗 Vehicular': [
-    {key:'isafe_vehicular',lb:'iSafe Veh'},{key:'safetouch_veh_curvo',lb:'Pilar'},
+    {key:'isafe_vehicular',lb:'iSafe Veh'},{key:'isafe_ls',lb:'iSafe LS'},{key:'safetouch_veh_curvo',lb:'Pilar'},
     {key:'camara_lpr',lb:'LPR Hikvision'},{key:'camara_lpr_quercus',lb:'LPR Quercus'},
     {key:'barrera_skidata',lb:'Barrera Skidata'},{key:'barrera_zkteco',lb:'Barrera ZKTeco'}
   ],
   '🚪 Torniquetes': [
     {key:'speedgate',lb:'Speedgate Simple'},{key:'speedgate_doble',lb:'Speedgate Doble'},{key:'torniquete_safecard',lb:'Torniq. Safecard'},
-    {key:'torniquete_estadio',lb:'Torniq. Estadio'}
+    {key:'torniquete_estadio',lb:'Torniq. Estadio'},{key:'torniquete_skidata',lb:'Torniq. Skidata'}
   ],
   '🎛️ Controladores': [
     {key:'controlador_8r',lb:'Ctrl. 8R'},{key:'controlador_4r',lb:'Ctrl. 4R'},{key:'controlador_2r',lb:'Ctrl. 2R'}
+  ],
+  '🚨 Alarma y Monitoreo': [
+    {key:'sensor_puertas',lb:'Sensor Puertas'}
   ],
   '📦 Otros': [
     {key:'sensor_zkteco',lb:'Sensor ZKTeco'},{key:'pc_guardia',lb:'PC Guardia'},
@@ -1404,7 +1422,7 @@ function pickVariant(key,cb){
 // ══ CALC SWITCHES ═════════════════════════════════════════════════════════
 // Equipos que no consumen puerto de switch propio y no se consideran en el cálculo de puertos
 // (Pilar es una estructura física; los Safetouch que lleva montados se cuentan aparte)
-const PORT_CALC_EXCLUDE = new Set(['safetouch_veh_curvo']);
+const PORT_CALC_EXCLUDE = new Set(['safetouch_veh_curvo','antena_wifi_map']);
 // Equipos que no se muestran en el cuadro "Resumen de Equipos" (viven en Base de Red o son un cálculo derivado)
 const SUMMARY_HIDE = new Set(['router_3g_5g','internet']);
 function updSwCalc(){
@@ -2044,6 +2062,8 @@ function exportExcel(){
   rows1.push(['', '', '', '', '', '']);
   rows1.push(['DATOS DEL RECINTO', '', '', '', '', '']);
   rows1.push(['Cantidad de usuarios', v('p_usuarios')||'0', '', 'Cantidad de propiedades', v('p_props')||'0', '']);
+  { const nUs=+v('p_usuarios')||0; if(nUs>0) rows1.push(['Estimado SMS/mes', '$'+Math.round(nUs*SMS_RATE_CLP).toLocaleString('es-CL'), '', '', '', '']); }
+  if(v('p_uf')) rows1.push(['Presupuesto cerrado (UF)', v('p_uf'), '', '', '', '']);
   rows1.push(['', '', '', '', '', '']);
   if(secNamesVeh.length){ rows1.push(['SECTORES VEHICULARES', '', '', '', '', '']); secNamesVeh.forEach(([t,n])=>rows1.push([t,n,'','','',''])); rows1.push(['','','','','','']); }
   if(secNamesPeat.length){ rows1.push(['SECTORES PEATONALES', '', '', '', '', '']); secNamesPeat.forEach(([t,n])=>rows1.push([t,n,'','','',''])); rows1.push(['','','','','','']); }
@@ -2248,12 +2268,14 @@ function exportExcel(){
     ['CABLEADO (metros lineales)',''],
     ['UTP Cat 6 (m)', tech.utp||'—'],
     ['Fibra óptica (m)', tech.fibra||'—'],
+    ['Cableado 220V (m)', tech.c220||'—'],
     [],
     ['CANALIZACIONES (metros lineales)',''],
     ['EMT (m)', tech.emt||'—'],
     ['EMT medida', tech.emtMed||'—'],
-    ['PVC (m)', tech.pvc||'—'],
-    ['PVC medida', tech.pvcMed||'—'],
+    ['PVC 20 mm (m)', tech.pvc20||'—'],
+    ['PVC 25 mm (m)', tech.pvc25||'—'],
+    ['Soterrado (m)', tech.soterrado||'—'],
     ['Pasadas de losa 25 mm (Speedgate)', (sgSimplesQty()+sgDoblesQty())||'—'],
     [],
     ['UBICACIÓN — BASE DE RED Y SERVIDOR',''],
@@ -2313,7 +2335,7 @@ async function saveProject(){
     if(on.length) toggles[g.id]=on;
   });
   const data={ _safecard:1, savedAt:new Date().toISOString(), fields, toggles,
-    state:{ baseSector, sectors, sid, activeSecId, tech, equipUbic, equipPos, sgConfigs, sgUid, matrizDetalle, usabMatrix, usabNA, projectPhotos, sectorPhotoNotes, dirSplit } };
+    state:{ baseSector, sectors, sid, activeSecId, tech, equipUbic, equipPos, sgConfigs, sgUid, matrizDetalle, usabMatrix, usabNA, usabVer:3, projectPhotos, sectorPhotoNotes, dirSplit } };
   const jsonStr = JSON.stringify(data);
   const nm=((typeof v==='function'?v('p_rec'):'')||'proyecto').replace(/[^a-z0-9]+/gi,'_').slice(0,40)||'proyecto';
   const filename='Safecard_'+nm+'.json';
@@ -2354,7 +2376,12 @@ function loadProject(file){
     baseSector = st.baseSector || {id:0,name:'Base de Red',color:'#0891b2',items:{}};
     sectors = Array.isArray(st.sectors)?st.sectors:[];
     sid = st.sid||0;
-    tech = Object.assign({ utp:'',fibra:'',emt:'',emtMed:'',pvc:'',pvcMed:'',servPos:'',servOtro:'',notas:'',oocc:'' }, st.tech||{});
+    tech = Object.assign({ utp:'',fibra:'',c220:'',emt:'',emtMed:'',pvc20:'',pvc25:'',soterrado:'',servPos:'',servOtro:'',notas:'',oocc:'' }, st.tech||{});
+    // migración: proyectos viejos guardaban un solo total "PVC" + una medida (20/25mm) —
+    // se traslada ese total al campo específico correspondiente si los nuevos campos están vacíos
+    if((tech.pvc||'') && !tech.pvc20 && !tech.pvc25){
+      if(tech.pvcMed==='25 mm') tech.pvc25=tech.pvc; else tech.pvc20=tech.pvc;
+    }
     equipUbic = st.equipUbic || {}; equipPos = st.equipPos || {};
     sgConfigs = Array.isArray(st.sgConfigs)?st.sgConfigs:[]; sgUid = st.sgUid||0;
     // normalizar configuraciones guardadas (compat con versiones previas) para que editar actualice bien los campos
@@ -2375,6 +2402,42 @@ function loadProject(file){
     matrizDetalle = st.matrizDetalle || {};
     usabMatrix = st.usabMatrix || {};
     usabNA = st.usabNA || {};
+    // migración: se agregó la fila "LPR Salida" en la posición 7 → en proyectos guardados
+    // antes de este cambio, las marcas desde la fila 7 en adelante quedan corridas 1 posición;
+    // se reindexan para que sigan cayendo en la fila correcta.
+    if(!st.usabVer || st.usabVer<2){
+      const shiftedMatrix={};
+      Object.keys(usabMatrix).forEach(k=>{
+        const idx=k.indexOf(':'); const fi=+k.slice(0,idx); const rest=k.slice(idx+1);
+        const nfi = fi>=7 ? fi+1 : fi;
+        shiftedMatrix[nfi+':'+rest]=usabMatrix[k];
+      });
+      const shiftedNA={};
+      Object.keys(usabNA).forEach(k=>{
+        const fi=+k; const nfi = fi>=7 ? fi+1 : fi;
+        shiftedNA[nfi]=usabNA[k];
+      });
+      usabMatrix=shiftedMatrix; usabNA=shiftedNA;
+    }
+    // migración: se redujo la lista de Usabilidad a solo 12 filas (se eliminaron
+    // Botón destrabador, Videoportero entrada/salida, Face ID, PCG (Punto Control Guardia),
+    // Salida por QR de RUT, Tiempo del delivery, Lectura LPR Free flow y Tablet) y se
+    // reordenaron las que quedaron. Se remapean los índices viejos (formato de 21 filas)
+    // a los nuevos (12 filas); las marcas de filas eliminadas se descartan.
+    if(!st.usabVer || st.usabVer<3){
+      const V2_TO_V3={0:0,1:1,3:2,4:3,5:4,6:5,7:6,8:7,16:8,13:9,14:10,17:11};
+      const mappedMatrix={};
+      Object.keys(usabMatrix).forEach(k=>{
+        const idx=k.indexOf(':'); const fi=+k.slice(0,idx); const rest=k.slice(idx+1);
+        if(V2_TO_V3[fi]!=null) mappedMatrix[V2_TO_V3[fi]+':'+rest]=usabMatrix[k];
+      });
+      const mappedNA={};
+      Object.keys(usabNA).forEach(k=>{
+        const fi=+k;
+        if(V2_TO_V3[fi]!=null) mappedNA[V2_TO_V3[fi]]=usabNA[k];
+      });
+      usabMatrix=mappedMatrix; usabNA=mappedNA;
+    }
     projectPhotos = Array.isArray(st.projectPhotos)?st.projectPhotos:[];
     sectorPhotoNotes = st.sectorPhotoNotes || {};
     dirSplit = st.dirSplit || {};
@@ -2432,7 +2495,7 @@ function loadProject(file){
     // re-render todo
     const wantActive = (st.activeSecId!=null && (st.activeSecId===0 || sectors.some(s=>s.id===st.activeSecId))) ? st.activeSecId : 0;
     activeSecId = wantActive;
-    renderSectors(); renderLib(); renderSectorView(); updSwCalc(); upProg(); renderTech(); renderSG(); renderMatrix();
+    renderSectors(); renderLib(); renderSectorView(); updSwCalc(); upProg(); renderTech(); renderSG(); renderMatrix(); calcSMS();
     if(typeof updTorniState==='function') updTorniState();
     toast('📂 Proyecto cargado · podés editarlo');
   };
@@ -2468,7 +2531,7 @@ function clearAll(){
   });
   sectors=[];sid=0;activeSecId=null;
   baseSector={id:0,name:'Base de Red',color:'#0891b2',items:{}};
-  tech={ utp:'', fibra:'', emt:'', emtMed:'', pvc:'', pvcMed:'', servPos:'', servOtro:'', notas:'', oocc:'' }; equipUbic={}; equipPos={};
+  tech={ utp:'', fibra:'', c220:'', emt:'', emtMed:'', pvc20:'', pvc25:'', soterrado:'', servPos:'', servOtro:'', notas:'', oocc:'' }; equipUbic={}; equipPos={};
   sgConfigs=[]; sgUid=0; matrizDetalle={}; usabMatrix={}; usabNA={}; projectPhotos=[]; sectorPhotoNotes={}; dirSplit={};
   renderSectors();renderLib();renderSectorView();updSwCalc();upProg();renderTech();
   if(typeof renderMatrix==='function') renderMatrix();
@@ -2611,18 +2674,13 @@ document.addEventListener('click', function(e){
   updIntegTypeFields();
 });
 
+// Costo aproximado por SMS en Chile (mercado de SMS masivo/transaccional, IVA incluido)
+const SMS_RATE_CLP = 50;
 function calcSMS(){
   const n=+document.getElementById('p_usuarios').value||0;
-  const sms=n*0.05; // example cost
+  const sms=n*SMS_RATE_CLP;
   const el=document.getElementById('sms-calc');
   if(el&&n>0)el.textContent='Estimado SMS/mes: $'+Math.round(sms).toLocaleString('es-CL');
-  else if(el)el.textContent='';
-}
-function calcFee(){
-  const n=+document.getElementById('p_props').value||0;
-  const fee=n*2500;
-  const el=document.getElementById('fee-calc');
-  if(el&&n>0)el.textContent='Fee mensual estimado: $'+fee.toLocaleString('es-CL');
   else if(el)el.textContent='';
 }
 
@@ -2990,7 +3048,7 @@ function sgDrawSchematic(c){
 // ══════════════════════════════════════════════════════════════════════════
 // INFORMACIÓN TÉCNICA
 // ══════════════════════════════════════════════════════════════════════════
-let tech = { utp:'', fibra:'', emt:'', emtMed:'', pvc:'', pvcMed:'', servPos:'', servOtro:'', notas:'', oocc:'' };
+let tech = { utp:'', fibra:'', c220:'', emt:'', emtMed:'', pvc20:'', pvc25:'', soterrado:'', servPos:'', servOtro:'', notas:'', oocc:'' };
 let equipUbic = {};
 let equipPos = {};
 let projectPhotos = [];
@@ -3146,7 +3204,7 @@ function techRow(label, sub, controlHtml){
 function updOOCC(){ const el=document.getElementById('p_occ'); const w=document.getElementById('t_oocc_wrap'); if(!w) return; w.style.display=(el&&el.value==='Safecard')?'':'none'; }
 function renderTech(){
   const sv=(id,val)=>{ const e=document.getElementById(id); if(e && e.value!==val) e.value=val; };
-  sv('t_utp',tech.utp); sv('t_fibra',tech.fibra); sv('t_emt',tech.emt); sv('t_emtmed',tech.emtMed||''); sv('t_pvc',tech.pvc); sv('t_pvcmed',tech.pvcMed||''); sv('t_oocc',tech.oocc||''); updOOCC();
+  sv('t_utp',tech.utp); sv('t_fibra',tech.fibra); sv('t_c220',tech.c220||''); sv('t_emt',tech.emt); sv('t_emtmed',tech.emtMed||''); sv('t_pvc20',tech.pvc20||''); sv('t_pvc25',tech.pvc25||''); sv('t_soterrado',tech.soterrado||''); sv('t_oocc',tech.oocc||''); updOOCC();
   const sp2=document.getElementById('t_servpos'); if(sp2) sp2.value=tech.servPos;
   const sw=document.getElementById('t_servotro_wrap'); if(sw) sw.style.display=(tech.servPos==='Otro')?'flex':'none';
   sv('t_servotro',tech.servOtro); sv('t_notas',tech.notas);
@@ -3232,6 +3290,10 @@ function printProyecto(){
       const ons=[].slice.call(f.querySelectorAll('.to.on')).map(t=>t.textContent.replace(/^✓\s*/,'').trim());
       if(ons.length) val=(val?val+' · ':'')+ons.join(', ');
       if(lab && val) rows+=_pKV(lab,val);
+      if(inp && inp.id==='p_usuarios'){
+        const nUs=+inp.value||0;
+        if(nUs>0) rows+=_pKV('Estimado SMS/mes', '$'+Math.round(nUs*SMS_RATE_CLP).toLocaleString('es-CL'));
+      }
     });
     if(rows) out+=_pCard(title, rows);
   });
@@ -3278,7 +3340,7 @@ function printSpeedgate(){
 }
 function printTecnico(){
   let out='';
-  let g=_pKV('UTP Cat 6 (m)', tech.utp||'—')+_pKV('Fibra óptica (m)', tech.fibra||'—')+_pKV('EMT (m)', (tech.emt||'—')+(tech.emtMed?(' · '+tech.emtMed):''))+_pKV('PVC (m)', (tech.pvc||'—')+(tech.pvcMed?(' · '+tech.pvcMed):''));
+  let g=_pKV('UTP Cat 6 (m)', tech.utp||'—')+_pKV('Fibra óptica (m)', tech.fibra||'—')+_pKV('Cableado 220V (m)', tech.c220||'—')+_pKV('EMT (m)', (tech.emt||'—')+(tech.emtMed?(' · '+tech.emtMed):''))+_pKV('PVC 20 mm (m)', tech.pvc20||'—')+_pKV('PVC 25 mm (m)', tech.pvc25||'—')+_pKV('Soterrado (m)', tech.soterrado||'—');
   const _sgU=sgSimplesQty()+sgDoblesQty(); if(_sgU>0) g+=_pKV('Pasadas de losa 25 mm (Speedgate)', _sgU+' (1 por Speedgate)');
   const _occ=(document.getElementById('p_occ')||{}).value||''; if(_occ==='Safecard' && (tech.oocc||'').trim()) g+=_pKV('Obras civiles (Safecard)', (tech.oocc||'').trim());
   out+=_pCard('🛠️ Cableado · Canalización', g);
@@ -3469,7 +3531,7 @@ function exportPDF(){
 let matrizDetalle = {};
 let usabMatrix = {};
 let usabNA = {};
-const USAB_FEATURES = ['QR de entrada','QR de salida','Botón destrabador','Control remoto APP','Acceso manual','Salida manual','LPR','LPR segunda validación','Videoportero de entrada','Videoportero de salida','Face ID','PCG (Punto Control Guardia)','Acceso por guardia con RUT en OCR','Acceso por guardia con digitación de RUT','Salida por QR de RUT','Apertura con botón en PCG','Botón de pánico','Tiempo del delivery','Lectura LPR Free flow','Tablet (registro entrada/salida)'];
+const USAB_FEATURES = ['QR de Entrada','QR de Salida','Control Remoto APP','Acceso Manual Entrada','Acceso Manual Salida','LPR Entrada','LPR Salida','LPR Segunda Validacion','Apertura por PCG','Acceso por CI','Acceso por invitacion','Botón de pánico'];
 function toggleUsab(fi,secId,on){ const k=fi+':'+secId; if(on) usabMatrix[k]=true; else delete usabMatrix[k]; }
 function usabRowAll(fi){ delete usabNA[fi]; sectors.forEach(s=>{ usabMatrix[fi+':'+s.id]=true; }); renderUsab(); }
 function usabRowNA(fi){ if(usabNA[fi]){ delete usabNA[fi]; } else { usabNA[fi]=true; sectors.forEach(s=>{ delete usabMatrix[fi+':'+s.id]; }); } renderUsab(); }
