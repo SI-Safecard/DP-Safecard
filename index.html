@@ -2063,7 +2063,7 @@ function exportExcel(){
   rows1.push(['DATOS DEL RECINTO', '', '', '', '', '']);
   rows1.push(['Cantidad de usuarios', v('p_usuarios')||'0', '', 'Cantidad de propiedades', v('p_props')||'0', '']);
   { const nUs=+v('p_usuarios')||0; if(nUs>0) rows1.push(['Estimado SMS/mes', '$'+Math.round(nUs*SMS_RATE_CLP).toLocaleString('es-CL'), '', '', '', '']); }
-  if(v('p_uf')) rows1.push(['Presupuesto cerrado (UF)', v('p_uf'), '', '', '', '']);
+  rows1.push(['Presupuesto cerrado (UF)', v('p_uf')||'', '', '', '', '']);
   rows1.push(['', '', '', '', '', '']);
   if(secNamesVeh.length){ rows1.push(['SECTORES VEHICULARES', '', '', '', '', '']); secNamesVeh.forEach(([t,n])=>rows1.push([t,n,'','','',''])); rows1.push(['','','','','','']); }
   if(secNamesPeat.length){ rows1.push(['SECTORES PEATONALES', '', '', '', '', '']); secNamesPeat.forEach(([t,n])=>rows1.push([t,n,'','','',''])); rows1.push(['','','','','','']); }
@@ -3282,9 +3282,18 @@ function printProyecto(){
   panel.querySelectorAll('.sec').forEach(sec=>{
     const title=(sec.querySelector('.st')||{}).textContent ? sec.querySelector('.st').textContent.trim() : 'Datos';
     let rows='';
+    // Dato comercial (ID Proyecto y Presupuesto UF): siempre visibles al inicio de esta sección,
+    // aunque estén vacíos, para que nunca falten en el informe.
+    if(/Datos del Proyecto/.test(title)){
+      const idv=(document.getElementById('p_id')||{}).value||'';
+      const ufv=(document.getElementById('p_uf')||{}).value||'';
+      rows+=_pKV('ID Proyecto', idv || '—');
+      rows+=_pKV('Presupuesto cerrado (UF)', ufv ? ('UF '+ufv) : '—');
+    }
     sec.querySelectorAll('.f').forEach(f=>{
       const lab=(f.querySelector('label')||{}).textContent ? f.querySelector('label').textContent.trim() : '';
       const inp=f.querySelector('input,select,textarea');
+      if(inp && (inp.id==='p_id' || inp.id==='p_uf')) return; // ya se agregaron arriba, evita duplicar
       let val='';
       if(inp){ val = (inp.type==='checkbox') ? (inp.checked?'Sí':'') : (inp.value||''); }
       const ons=[].slice.call(f.querySelectorAll('.to.on')).map(t=>t.textContent.replace(/^✓\s*/,'').trim());
