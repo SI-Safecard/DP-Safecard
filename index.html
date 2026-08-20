@@ -650,30 +650,41 @@ table.mtx td.mx-num{color:var(--tx);font-weight:600;min-width:48px}
           <input id="p_props" type="number" min="0" placeholder="0"
             style="font-size:16px;font-weight:700;color:var(--br)">
         </div>
+        <div class="f">
+          <label>Cantidad de servidores</label>
+          <input id="p_servers" type="number" min="1" max="20" placeholder="1" value="1"
+            style="font-size:16px;font-weight:700;color:var(--br)" oninput="syncServers()">
+          <div style="font-size:9px;color:var(--mt);margin-top:2px">Más de 1 = Base de Red independiente por servidor</div>
+        </div>
 
       </div>
-      <!-- Sectores dinámicos -->
-      <div class="fg g3" style="margin-bottom:12px">
-        <div class="f">
-          <label>Cantidad de accesos <b style="color:var(--br)">Vehiculares</b></label>
-          <input id="n_veh" type="number" min="0" max="20" value="0"
-            oninput="buildSectorInputs('veh',this.value,'🚗 Acceso Vehicular','#3B82F6')">
+      <!-- Servidores (Base de Red independiente por cada uno) -->
+      <div id="server-inputs"></div>
+      <!-- Sectores dinámicos: bloque único (1 servidor) o un bloque completo e independiente por servidor (>1) -->
+      <div id="legacy-access-block">
+        <div class="fg g3" style="margin-bottom:12px">
+          <div class="f">
+            <label>Cantidad de accesos <b style="color:var(--br)">Vehiculares</b></label>
+            <input id="n_veh" type="number" min="0" max="20" value="0"
+              oninput="buildSectorInputs('veh',this.value,'🚗 Acceso Vehicular','#3B82F6')">
+          </div>
+          <div class="f">
+            <label>Cantidad de accesos <b style="color:var(--gn)">Peatonales</b></label>
+            <input id="n_peat" type="number" min="0" max="20" value="0"
+              oninput="buildSectorInputs('peat',this.value,'🚶 Acceso Peatonal','#22C55E')">
+          </div>
+          <div class="f">
+            <label>Cantidad de <b style="color:#A855F7">Facilities</b></label>
+            <input id="n_fac" type="number" min="0" max="20" value="0"
+              oninput="buildSectorInputs('fac',this.value,'🏋️ Facility','#A855F7')">
+          </div>
         </div>
-        <div class="f">
-          <label>Cantidad de accesos <b style="color:var(--gn)">Peatonales</b></label>
-          <input id="n_peat" type="number" min="0" max="20" value="0"
-            oninput="buildSectorInputs('peat',this.value,'🚶 Acceso Peatonal','#22C55E')">
-        </div>
-        <div class="f">
-          <label>Cantidad de <b style="color:#A855F7">Facilities</b></label>
-          <input id="n_fac" type="number" min="0" max="20" value="0"
-            oninput="buildSectorInputs('fac',this.value,'🏋️ Facility','#A855F7')">
-        </div>
+        <!-- Dynamic sector name inputs -->
+        <div id="sector-inputs-veh"></div>
+        <div id="sector-inputs-peat"></div>
+        <div id="sector-inputs-fac"></div>
       </div>
-      <!-- Dynamic sector name inputs -->
-      <div id="sector-inputs-veh"></div>
-      <div id="sector-inputs-peat"></div>
-      <div id="sector-inputs-fac"></div>
+      <div id="server-access-blocks"></div>
     </div>
 
     
@@ -707,8 +718,8 @@ table.mtx td.mx-num{color:var(--tx);font-weight:600;min-width:48px}
           <span id="scb" style="font-size:10px;color:var(--br);font-family:'DM Mono',monospace"></span>
         </div>
         <div class="sec-scroll" id="secList"></div>
-        <div style="padding:5px 7px 3px">
-          <button class="add-sec" onclick="addSector()">＋ Agregar Sector</button>
+        <div style="padding:5px 7px 3px" id="addSecBtnGlobalWrap">
+          <button class="add-sec" id="addSecBtnGlobal" onclick="addSector()">＋ Agregar Sector</button>
         </div>
       </div>
       <div class="eq-infra">
@@ -775,6 +786,7 @@ table.mtx td.mx-num{color:var(--tx);font-weight:600;min-width:48px}
         <div style="font-size:14px;font-weight:700">🚪 Configuraciones de Speedgate</div>
         <div style="font-size:10px;color:var(--mt)">Cada configuración es independiente (un acceso / emplazamiento)</div>
       </div>
+      <button class="btn" style="height:34px;padding:0 16px;font-size:12px" onclick="exportTorniquetesDiagramPDF()">📄 PDF Diagrama Torniquetes</button>
       <button class="btn btn-v" style="height:34px;padding:0 16px;font-size:12px" onclick="sgAdd()">＋ Agregar configuración</button>
     </div>
     <div id="sgConfigList"></div>
@@ -849,20 +861,8 @@ table.mtx td.mx-num{color:var(--tx);font-weight:600;min-width:48px}
     </div>
     <div class="sec">
       <div class="st">🖥️ Base de Red — Ubicación y Servidor</div>
-      <div style="font-size:10px;color:var(--mt);margin-bottom:10px">La <b>ubicación</b> aplica a los equipos de infraestructura de Base de Red (incluido el servidor).</div>
-      <div class="fg g2" style="margin-bottom:10px">
-        <div class="f"><label>Ubicación del servidor</label>
-          <select id="t_servpos" onchange="techServPos(this.value)">
-            <option value="">— Seleccionar —</option>
-            <option>Sala de control</option>
-            <option>Sala eléctrica</option>
-            <option>Sala data</option>
-            <option>Otro</option>
-          </select>
-        </div>
-        <div class="f" id="t_servotro_wrap" style="display:none"><label>Especificar ubicación</label><input id="t_servotro" placeholder="Indicar sala / lugar" oninput="techSet('servOtro',this.value)"></div>
-      </div>
-      <div id="techEquipList"></div>
+      <div style="font-size:10px;color:var(--mt);margin-bottom:10px">La <b>ubicación</b> aplica a los equipos de infraestructura de Base de Red (incluido el servidor). Con más de 1 servidor, cada uno tiene su propio bloque totalmente independiente.</div>
+      <div id="techBaseRedHost"></div>
     </div>
     <div class="sec">
       <div class="st">📷 Fotos por sector</div>
@@ -990,18 +990,20 @@ const PAL=['#E8541A','#3B82F6','#22C55E','#A855F7','#F59E0B','#06B6D4','#EC4899'
 // Equipos que son "Base de Red" — siempre van en la sección de infraestructura
 const BASE_KEYS=new Set(['internet','servidor_local_v2','servidor_local','backup_ls','router_3g_5g','switch_24p','switch_8p','switch_4p']);
 const SPEEDGATE_KEYS=new Set(['speedgate','speedgate_doble']);
+// Cantidad de un equipo de infraestructura sumada across TODOS los servidores (Base de Red)
+function svQty(key){ return servers.reduce((a,sv)=>a+((sv.items||{})[key]||0),0); }
 function hasSpeedgate(){
   const any=o=>Object.entries(o||{}).some(([k,q])=>q>0 && SPEEDGATE_KEYS.has(baseKey(k)));
-  return any(baseSector.items) || sectors.some(s=>any(s.items));
+  return servers.some(sv=>any(sv.items)) || sectors.some(s=>any(s.items));
 }
 function hasFaceIdSG(){
   const any=o=>Object.entries(o||{}).some(([k,q])=>q>0 && baseKey(k)==='face_id_speedgate');
-  return any(baseSector.items) || sectors.some(s=>any(s.items));
+  return servers.some(sv=>any(sv.items)) || sectors.some(s=>any(s.items));
 }
-function faceSGQty(){ let n=0; const ad=o=>Object.entries(o||{}).forEach(([k,q])=>{ if(baseKey(k)==='face_id_speedgate') n+=q; }); ad(baseSector.items); sectors.forEach(s=>ad(s.items)); return n; }
+function faceSGQty(){ let n=0; const ad=o=>Object.entries(o||{}).forEach(([k,q])=>{ if(baseKey(k)==='face_id_speedgate') n+=q; }); servers.forEach(sv=>ad(sv.items)); sectors.forEach(s=>ad(s.items)); return n; }
 function faceSGUsed(){ let n=0; sgConfigs.forEach(c=>{ n += (c.faceids||[]).filter(Boolean).length; }); return n*2; }
-function sgSimplesQty(model){ let n=0; const ad=o=>Object.entries(o||{}).forEach(([k,q])=>{ if(baseKey(k)==='speedgate' && (!model||keyVar(k)===model)) n+=q; }); ad(baseSector.items); sectors.forEach(s=>ad(s.items)); return n; }
-function sgDoblesQty(model){ let n=0; const ad=o=>Object.entries(o||{}).forEach(([k,q])=>{ if(baseKey(k)==='speedgate_doble' && (!model||keyVar(k)===model)) n+=q; }); ad(baseSector.items); sectors.forEach(s=>ad(s.items)); return n; }
+function sgSimplesQty(model){ let n=0; const ad=o=>Object.entries(o||{}).forEach(([k,q])=>{ if(baseKey(k)==='speedgate' && (!model||keyVar(k)===model)) n+=q; }); servers.forEach(sv=>ad(sv.items)); sectors.forEach(s=>ad(s.items)); return n; }
+function sgDoblesQty(model){ let n=0; const ad=o=>Object.entries(o||{}).forEach(([k,q])=>{ if(baseKey(k)==='speedgate_doble' && (!model||keyVar(k)===model)) n+=q; }); servers.forEach(sv=>ad(sv.items)); sectors.forEach(s=>ad(s.items)); return n; }
 function sgSimplesUsed(model){ return sgConfigs.filter(c=>!model||(c.modelo||'DS212')===model).length*2; }
 function sgDoblesUsed(model){ return sgConfigs.filter(c=>!model||(c.modelo||'DS212')===model).reduce((a,c)=>a+Math.max(0,(c.pasos||1)-1),0); }
 function sgModelsInPlay(){ const s=new Set(['DS212','DS7100'].filter(m=>sgSimplesQty(m)>0||sgDoblesQty(m)>0)); sgConfigs.forEach(c=>s.add(c.modelo||'DS212')); return [...s]; }
@@ -1062,10 +1064,14 @@ const CATS={
 const ALL=Object.values(CATS).flat();
 
 // ══ STATE ═════════════════════════════════════════════════════════════════
-// sectors[]: {id, name, color, items:{key: qty}}
-// Base de Red es un sector especial con id=0
+// sectors[]: {id, name, color, items:{key: qty}, serverId}
+// servers[]: {id, name, color, items:{key: qty}} — una o más "Base de Red" independientes.
+// El primer servidor siempre usa id=0 (compatibilidad con proyectos guardados como baseSector único).
+// Los servidores adicionales usan ids negativos (-1,-2,...) para no chocar con ids de sectores (positivos).
 let sectors=[];
-let baseSector={id:0,name:'Base de Red',color:'#0891b2',items:{}};
+let servers=[{id:0,name:'Base de Red',color:'#0891b2',items:{},servPos:'',servOtro:''}];
+// alias de compatibilidad: baseSector = primer servidor (código legado que aún lo referencia)
+function baseSectorRef(){ return servers[0]; }
 let sid=0;
 let activeSecId=null;   // null = ninguno, 0 = base, n = sector id
 let diagSectionBounds=[]; // {y,h} de cada sección del último diagrama generado — usado para paginar la impresión
@@ -1107,12 +1113,144 @@ function gTog(gid){
   return s?s.dataset.v:'';
 }
 
+// ══ SERVIDORES (Base de Red) ══════════════════════════════════════════════
+// Un servidor = una Base de Red independiente, con sus propios equipos de infraestructura.
+// id del primer servidor = 0 (compat. proyectos viejos con un solo baseSector); adicionales = -1,-2,...
+function isServerId(id){ return servers.some(sv=>sv.id===id); }
+function getServerById(id){ return servers.find(sv=>sv.id===id) || servers[0]; }
+function sectorServerId(s){ return (s && s.serverId!=null && isServerId(s.serverId)) ? s.serverId : servers[0].id; }
+function sectorsForServer(svId){ return sectors.filter(s=>sectorServerId(s)===svId); }
+function serverLabel(sv){ return servers.length>1 ? sv.name : 'Base de Red'; }
+// Cuadro visual en "Datos del Recinto" (mismo estilo que Acceso Vehicular/Peatonal/Facility):
+// aparece apenas se pone más de 1 servidor, mostrando cada Base de Red independiente creada.
+function renderServerBoxes(){
+  const container=document.getElementById('server-inputs');
+  if(!container) return;
+  if(servers.length<=1){ container.innerHTML=''; return; }
+  const color='#0891b2';
+  let html='<div style="margin-bottom:10px;padding:12px 14px;background:'+color+'15;border:1.5px solid '+color+'50;border-radius:10px">';
+  html+='<div style="font-size:10px;font-weight:700;color:'+color+';text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">🖥️ Servidores — Base de Red independiente por cada uno</div>';
+  html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px">';
+  servers.forEach(sv=>{
+    const secsSv=sectorsForServer(sv.id);
+    const totBase=Object.values(sv.items||{}).reduce((a,b)=>a+b,0);
+    const totSecs=secsSv.reduce((a,s)=>a+Object.values(s.items||{}).reduce((x,y)=>x+y,0),0);
+    const tot=totBase+totSecs;
+    const nSecs=secsSv.length;
+    html+='<div style="background:var(--in);border:1px solid '+color+'50;border-radius:8px;padding:8px 10px">';
+    html+='<div style="font-size:11px;font-weight:800;color:'+color+'">🖥️ '+sv.name+'</div>';
+    html+='<div style="font-size:9px;color:var(--mt);margin-top:3px">'+nSecs+' sector'+(nSecs!==1?'es':'')+' asignado'+(nSecs!==1?'s':'')+' · '+tot+' equipo'+(tot!==1?'s':'')+'</div>';
+    html+='</div>';
+  });
+  html+='</div></div>';
+  container.innerHTML=html;
+}
+const ACCESS_TYPES=[
+  {key:'veh',  fullLabel:'Cantidad de accesos <b style="color:#3B82F6">Vehiculares</b>', boxLabel:'🚗 Acceso Vehicular', color:'#3B82F6'},
+  {key:'peat', fullLabel:'Cantidad de accesos <b style="color:#22C55E">Peatonales</b>',  boxLabel:'🚶 Acceso Peatonal',  color:'#22C55E'},
+  {key:'fac',  fullLabel:'Cantidad de <b style="color:#A855F7">Facilities</b>',           boxLabel:'🏋️ Facility',        color:'#A855F7'}
+];
+// Cuenta cuántos accesos de un tipo (veh/peat/fac) tiene YA creados un servidor puntual,
+// mirando los sectores existentes (misma lógica que se usa al reconstruir tras cargar un proyecto).
+function reconstructAccessCount(serverId, type){
+  const secs=sectors.filter(s=>s.fromInput && s.inputType===type && sectorServerId(s)===serverId);
+  return secs.length ? Math.max.apply(null, secs.map(s=>s.inputIdx||0))+1 : 0;
+}
+// Con más de 1 servidor: en vez de un único cuadro global de "Cantidad de accesos", cada servidor
+// tiene su propio bloque completo e independiente (sus propios contadores + nombres de sector),
+// para que los sectores queden asignados al servidor correcto desde que se crean.
+function renderServerAccessBlocks(){
+  const legacy=document.getElementById('legacy-access-block');
+  const host=document.getElementById('server-access-blocks');
+  if(!host) return;
+  if(servers.length<=1){
+    if(legacy) legacy.style.display='';
+    host.innerHTML=''; // saca del DOM los inputs por-servidor para que no se cuenten dos veces
+    // repoblar el cuadro único con lo que tenga el (único) servidor
+    ACCESS_TYPES.forEach(t=>{
+      const n=reconstructAccessCount(servers[0].id,t.key);
+      const el=document.getElementById('n_'+t.key); if(el) el.value=n;
+      if(n>0) buildSectorInputs(t.key, n, t.boxLabel, t.color);
+      else { const c=document.getElementById('sector-inputs-'+t.key); if(c) c.innerHTML=''; }
+    });
+    return;
+  }
+  if(legacy){
+    legacy.style.display='none';
+    // saca del DOM los inputs del cuadro único para que no se cuenten dos veces en syncSectorsFromInputs()
+    ACCESS_TYPES.forEach(t=>{
+      const c=document.getElementById('sector-inputs-'+t.key); if(c) c.innerHTML='';
+      const el=document.getElementById('n_'+t.key); if(el) el.value='0';
+    });
+  }
+  let html='';
+  servers.forEach(sv=>{
+    html+='<div style="margin-bottom:14px;padding:12px 14px;border:1.5px solid #0891b250;border-radius:10px;background:#0891b20d">';
+    html+='<div style="font-size:11px;font-weight:800;color:#0891b2;margin-bottom:10px">🖥️ '+sgEsc(sv.name)+' — Accesos</div>';
+    html+='<div class="fg g3" style="margin-bottom:10px">';
+    ACCESS_TYPES.forEach(t=>{
+      const n=reconstructAccessCount(sv.id,t.key);
+      html+='<div class="f"><label>'+t.fullLabel+'</label>'
+        +'<input id="n_'+t.key+'_'+sv.id+'" type="number" min="0" max="20" value="'+n+'" '
+        +'oninput="buildSectorInputs(\''+t.key+'\',this.value,\''+t.boxLabel+'\',\''+t.color+'\','+sv.id+')"></div>';
+    });
+    html+='</div>';
+    ACCESS_TYPES.forEach(t=>{ html+='<div id="sector-inputs-'+t.key+'_'+sv.id+'"></div>'; });
+    html+='</div>';
+  });
+  host.innerHTML=html;
+  // recién creados los contenedores vacíos: poblar cada caja de nombres con lo ya existente
+  servers.forEach(sv=>{
+    ACCESS_TYPES.forEach(t=>{
+      const n=reconstructAccessCount(sv.id,t.key);
+      if(n>0) buildSectorInputs(t.key, n, t.boxLabel, t.color, sv.id);
+    });
+  });
+}
+// Sincroniza servers[] según el campo "Cantidad de servidores". Nunca borra datos:
+// si se reduce la cantidad y algún servidor a eliminar tiene equipos o sectores asignados, se bloquea.
+function syncServers(){
+  const inp=document.getElementById('p_servers');
+  let n=Math.max(1, Math.min(20, parseInt(inp&&inp.value)||1));
+  if(n===servers.length){ if(inp) inp.value=servers.length>1?String(n):inp.value; return; }
+  if(n>servers.length){
+    // al pasar de 1 a varios servidores, el primero deja de llamarse "Base de Red"
+    // y se numera igual que los demás (nombres siempre autogenerados, sin edición manual)
+    if(servers.length===1 && servers[0].name==='Base de Red'){
+      servers[0].name='Servidor 1';
+      // migración: la ubicación/equipos que estaban en los campos globales (single-server)
+      // pasan a ser propios del Servidor 1 para no perder el dato al independizar servidores.
+      if(!servers[0].servPos && tech.servPos){ servers[0].servPos=tech.servPos; servers[0].servOtro=tech.servOtro||''; }
+      Object.entries(servers[0].items||{}).forEach(([k,q])=>{
+        if(q>0 && equipUbic[k]!=null && equipUbic[servers[0].id+':'+k]==null) equipUbic[servers[0].id+':'+k]=equipUbic[k];
+      });
+    }
+    while(servers.length<n){
+      const idx=servers.length;
+      servers.push({id:-(idx), name:'Servidor '+(idx+1), color:'#0891b2', items:{}, servPos:'', servOtro:''});
+    }
+  } else {
+    const toRemove=servers.slice(n);
+    const blocked=toRemove.some(sv=>Object.values(sv.items||{}).some(q=>q>0) || sectorsForServer(sv.id).length>0);
+    if(blocked){
+      toast('⚠️ Hay equipos o sectores asignados a un servidor que intentás quitar. Reasignalos primero.', 5000, true);
+      if(inp) inp.value=servers.length;
+      return;
+    }
+    servers=servers.slice(0,n);
+    if(activeSecId!=null && activeSecId<=0 && !isServerId(activeSecId)) activeSecId=servers[0].id;
+  }
+  if(inp) inp.value=n;
+  renderSectors();renderLib();renderSectorView();updSwCalc();renderServerBoxes();renderServerAccessBlocks();
+}
+
 // ══ ACCESOS ═══════════════════════════════════════════════════════════════
 // ══ SECTORES ══════════════════════════════════════════════════════════════
-function addSector(name,color){
+function addSector(name,color,serverId){
   if(!color)color=PAL[sectors.length%PAL.length];
   const id=++sid;
-  sectors.push({id,name:name||'Sector '+sectors.length,color,items:{}});
+  const svId=serverId!=null?+serverId:servers[0].id;
+  sectors.push({id,name:name||'Sector '+sectors.length,color,items:{},serverId:svId});
   setActive(id);
   renameSid=id;
   renderSectors();renderLib();
@@ -1124,8 +1262,14 @@ function removeSector(id){
   renderSectors();renderLib();renderSectorView();
 }
 
+function setSectorServer(id,serverId){
+  const s=sectors.find(x=>x.id===id); if(!s) return;
+  s.serverId=+serverId;
+  renderSectors();updSwCalc();renderMatrix();renderServerBoxes();
+}
+
 function updateSecName(id,val){
-  if(id===0){baseSector.name=val;}
+  if(isServerId(id)){getServerById(id).name=val;}
   else{const s=sectors.find(s=>s.id===id);if(s)s.name=val;}
   if(activeSecId===id){
     document.getElementById('svName').textContent=val||'Sin nombre';
@@ -1137,15 +1281,15 @@ function updateSecName(id,val){
 function toggleColorPicker(id){activeColorSid=activeColorSid===id?null:id;renderSectors();}
 
 function pickColor(id,c){
-  if(id===0)baseSector.color=c;
+  if(isServerId(id))getServerById(id).color=c;
   else{const s=sectors.find(s=>s.id===id);if(s)s.color=c;}
   activeColorSid=null;
   renderSectors();renderSectorView();renderLib();
 }
 
-function getSecColor(id){return id===0?baseSector.color:(sectors.find(s=>s.id===id)?.color||'#E8541A');}
-function getSecName(id){return id===0?baseSector.name:(sectors.find(s=>s.id===id)?.name||'Sector');}
-function getSecItems(id){return id===0?baseSector.items:(sectors.find(s=>s.id===id)?.items||{});}
+function getSecColor(id){return isServerId(id)?getServerById(id).color:(sectors.find(s=>s.id===id)?.color||'#E8541A');}
+function getSecName(id){return isServerId(id)?getServerById(id).name:(sectors.find(s=>s.id===id)?.name||'Sector');}
+function getSecItems(id){return isServerId(id)?getServerById(id).items:(sectors.find(s=>s.id===id)?.items||{});}
 
 function setActive(id){
   activeSecId=id;
@@ -1153,56 +1297,77 @@ function setActive(id){
   renderSectorView();renderLib();
 }
 
+function _sectorCardHTML(s){
+  const tot = Object.values(s.items).reduce((a,b)=>a+b,0);
+  const sws = activeColorSid===s.id
+    ? `<div class="swatches">${PAL.map(col=>`<div class="swatch${s.color===col?' sel':''}" style="background:${col}" onclick="pickColor(${s.id},'${col}')"></div>`).join('')}</div>`
+    : '';
+  return `${sws}
+    <div class="sc-card${activeSecId===s.id?' active':''}" data-sid="${s.id}"
+         onclick="setActive(${s.id})" style="${activeSecId===s.id?`border-color:${s.color}`:''}">
+      <div class="sc-head">
+        <div class="sc-dot" style="background:${s.color}"
+             onclick="event.stopPropagation();toggleColorPicker(${s.id})"></div>
+        ${ renameSid===s.id
+          ? `<input class="sc-inp" value="${s.name.replace(/"/g,'&quot;')}"
+               placeholder="Nombre del sector"
+               oninput="updateSecName(${s.id},this.value)"
+               onkeydown="if(event.key==='Enter'){this.blur();}"
+               onblur="endRename()"
+               onclick="event.stopPropagation()">`
+          : `<span class="sc-name">${s.name ? s.name.replace(/</g,'&lt;') : '<span style="color:var(--mt)">Sin nombre</span>'}</span>` }
+        <span class="sc-cnt">${tot||''}</span>
+        ${ renameSid===s.id ? '' : `<button class="sc-edit" onclick="event.stopPropagation();startRename(${s.id})" title="Renombrar sector">✏️</button>`}
+        ${s.fromInput ? '' : `<button class="sc-del" onclick="event.stopPropagation();removeSector(${s.id})" title="Eliminar">✕</button>`}
+      </div>
+    </div>`;
+}
+function _serverCardHTML(sv, label){
+  const tot=Object.values(sv.items).reduce((a,b)=>a+b,0);
+  return `<div class="sc-card${activeSecId===sv.id?' active':''}" data-sid="${sv.id}"
+       onclick="setActive(${sv.id})"
+       style="border-color:#0891b2;margin-bottom:6px">
+    <div class="sc-head">
+      <div class="sc-dot" style="background:#0891b2;cursor:default"></div>
+      <span class="sc-inp" style="color:#67e8f9;font-size:11px;font-weight:700;
+        border:none;background:transparent;flex:1">${label}</span>
+      <span class="sc-cnt" style="color:#0891b2">
+        ${tot||''}
+      </span>
+    </div>
+  </div>`;
+}
 function renderSectors(){
   const list = document.getElementById('secList');
-  document.getElementById('scb').textContent = '('+(sectors.length+1)+')';
+  document.getElementById('scb').textContent = '('+(sectors.length+servers.length)+')';
+  const multiServer = servers.length>1;
+  const addBtnWrap=document.getElementById('addSecBtnGlobalWrap');
+  if(addBtnWrap) addBtnWrap.style.display = multiServer ? 'none' : '';
 
-  // Base de Red ALWAYS first, pinned, not deletable
-  const baseHTML = `
-    <div class="sc-card${activeSecId===0?' active':''}" data-sid="0"
-         onclick="setActive(0)"
-         style="border-color:#0891b2;margin-bottom:6px">
-      <div class="sc-head">
-        <div class="sc-dot" style="background:#0891b2;cursor:default"></div>
-        <span class="sc-inp" style="color:#67e8f9;font-size:11px;font-weight:700;
-          border:none;background:transparent;flex:1">⚙️ Base de Red</span>
-        <span class="sc-cnt" style="color:#0891b2">
-          ${Object.values(baseSector.items).reduce((a,b)=>a+b,0)||''}
-        </span>
-      </div>
-    </div>
-    ${sectors.length ? '<div style="height:1px;background:var(--bd);margin:4px 0 6px"></div>' : ''}
-  `;
-
-  const secsHTML = sectors.length === 0
-    ? '<div style="text-align:center;color:var(--mt);font-size:10px;padding:10px;opacity:.5">Sin sectores — volvé a Proyecto para definirlos</div>'
-    : sectors.map(s => {
-        const tot = Object.values(s.items).reduce((a,b)=>a+b,0);
-        const sws = activeColorSid===s.id
-          ? `<div class="swatches">${PAL.map(col=>`<div class="swatch${s.color===col?' sel':''}" style="background:${col}" onclick="pickColor(${s.id},'${col}')"></div>`).join('')}</div>`
-          : '';
-        return `${sws}
-          <div class="sc-card${activeSecId===s.id?' active':''}" data-sid="${s.id}"
-               onclick="setActive(${s.id})" style="${activeSecId===s.id?`border-color:${s.color}`:''}">
-            <div class="sc-head">
-              <div class="sc-dot" style="background:${s.color}"
-                   onclick="event.stopPropagation();toggleColorPicker(${s.id})"></div>
-              ${ renameSid===s.id
-                ? `<input class="sc-inp" value="${s.name.replace(/"/g,'&quot;')}"
-                     placeholder="Nombre del sector"
-                     oninput="updateSecName(${s.id},this.value)"
-                     onkeydown="if(event.key==='Enter'){this.blur();}"
-                     onblur="endRename()"
-                     onclick="event.stopPropagation()">`
-                : `<span class="sc-name">${s.name ? s.name.replace(/</g,'&lt;') : '<span style="color:var(--mt)">Sin nombre</span>'}</span>` }
-              <span class="sc-cnt">${tot||''}</span>
-              ${ renameSid===s.id ? '' : `<button class="sc-edit" onclick="event.stopPropagation();startRename(${s.id})" title="Renombrar sector">✏️</button>`}
-              ${s.fromInput ? '' : `<button class="sc-del" onclick="event.stopPropagation();removeSector(${s.id})" title="Eliminar">✕</button>`}
-            </div>
-          </div>`;
-      }).join('');
-
-  list.innerHTML = baseHTML + secsHTML;
+  if(!multiServer){
+    // ── 1 solo servidor: comportamiento de siempre (sin bloques ni separadores) ──
+    const baseHTML = _serverCardHTML(servers[0], '⚙️ Base de Red')
+      + (sectors.length ? '<div style="height:1px;background:var(--bd);margin:4px 0 6px"></div>' : '');
+    const secsHTML = sectors.length === 0
+      ? '<div style="text-align:center;color:var(--mt);font-size:10px;padding:10px;opacity:.5">Sin sectores — volvé a Proyecto para definirlos</div>'
+      : sectors.map(_sectorCardHTML).join('');
+    list.innerHTML = baseHTML + secsHTML;
+  } else {
+    // ── Más de 1 servidor: un bloque completo e independiente por cada uno ──
+    list.innerHTML = servers.map(sv=>{
+      const secsSv = sectorsForServer(sv.id);
+      const secsHTML = secsSv.length
+        ? secsSv.map(_sectorCardHTML).join('')
+        : '<div style="text-align:center;color:var(--mt);font-size:9px;padding:6px;opacity:.6">Sin sectores en este servidor</div>';
+      return `<div style="border:1px solid #0891b240;border-radius:10px;padding:7px;margin-bottom:10px;background:#0891b208">
+        <div style="font-size:10px;font-weight:800;color:#0891b2;margin-bottom:6px;padding:0 2px">🖥️ ${sgEsc(sv.name)}</div>
+        ${_serverCardHTML(sv, '⚙️ Base de Red')}
+        <div style="height:1px;background:var(--bd);margin:4px 0 6px"></div>
+        ${secsHTML}
+        <button class="add-sec" style="margin-top:6px" onclick="addSector(null,null,${sv.id})">＋ Agregar Sector a ${sgEsc(sv.name)}</button>
+      </div>`;
+    }).join('');
+  }
   if(renameSid!=null){ const inp=document.querySelector(`.sc-card[data-sid="${renameSid}"] .sc-inp`); if(inp){ inp.focus(); try{inp.select();}catch(e){} } }
 }
 
@@ -1332,7 +1497,7 @@ function renderLib(){
   hint.style.display='none';
 
   const items=getSecItems(activeSecId);
-  const isBase=activeSecId===0;
+  const isBase=isServerId(activeSecId);
   const catItems=CATS[activeCat]||[];
 
   // For base: only show base keys; for sectors: show non-base keys
@@ -1361,7 +1526,7 @@ function renderLib(){
 function addItemToSector(key){
   if(activeSecId===null){toast('⚠️ Seleccioná un sector primero');return;}
   // Validate: base keys only go to base sector; non-base only to regular sectors
-  const isBase=activeSecId===0;
+  const isBase=isServerId(activeSecId);
   if(isBase&&!BASE_KEYS.has(key)){toast('⚠️ Los equipos de acceso van en los sectores, no en Base de Red');return;}
   if(!isBase&&BASE_KEYS.has(key)){toast('⚠️ Los equipos de infraestructura van en Base de Red');return;}
   if(isVariantEq(key)){ pickVariant(key, function(c){ if(c==null) return; const ck=mkKey(key,c); const it=getSecItems(activeSecId); it[ck]=(it[ck]||0)+1; afterItemChange(); }); return; }
@@ -1384,6 +1549,7 @@ function isVarKey(k){ return (k||'').indexOf(VSEP)>=0; }
 function mkKey(b,v){ return v?(b+VSEP+v):b; }
 const CARCASA_OPTS = ['Sin carcasa','Carcasa 3D Exterior','Carcasa 3D Interior','Carcasa Metálica Interior','Carcasa Metálica Exterior'];
 const PILAR_OPTS = ['Pilar Recto 1.20','Pilar Recto 1.50','Pilar Curvo 1.20','Pilar Curvo 1.50','Pilar Doble','Pilar Triple'];
+const CARCASA_SIMPLE_OPTS = ['Carcasa 3D','Carcasa Metálica'];
 // Cantidad de Safetouch físicos que van montados en cada tipo de pilar vehicular
 const PILAR_ST_UNITS = {'Pilar Doble':2,'Pilar Triple':3};
 function stVehSafetouchUnits(variant){ return PILAR_ST_UNITS[variant]||1; }
@@ -1395,7 +1561,11 @@ const VARIANT_DEFS = {
   'speedgate': { title:'Speedgate Simple — Modelo', sub:'Seleccioná el modelo del Speedgate.', opts:['DS212','DS7100'], short:{} },
   'speedgate_doble': { title:'Speedgate Doble — Modelo', sub:'Seleccioná el modelo del Speedgate.', opts:['DS212','DS7100'], short:{} },
   'barrera_zkteco': { title:'Barrera ZKTeco — Modelo', sub:'Seleccioná el modelo de la barrera.', opts:['3.0 L','3.0 R','4.5 L','4.5 R','6.0 L','6.0 R','Articulada L','Articulada R'], short:{} },
-  'barrera_skidata': { title:'Barrera Skidata — Modelo', sub:'Seleccioná el modelo de la barrera.', opts:['3.0 N','3.0 GB','3.6 N','3.6 GB','6.0 N','6.0 GB','Articulada N','Articulada GB'], short:{} }
+  'barrera_skidata': { title:'Barrera Skidata — Modelo', sub:'Seleccioná el modelo de la barrera.', opts:['3.0 N','3.0 GB','3.6 N','3.6 GB','6.0 N','6.0 GB','Articulada N','Articulada GB'], short:{} },
+  'video_portero': { title:'Video Portero — Carcasa', sub:'Seleccioná el tipo de carcasa para este equipo.', opts:CARCASA_SIMPLE_OPTS,
+    short:{'Carcasa 3D':'3D','Carcasa Metálica':'Metálica'} },
+  'face_id': { title:'Face ID — Carcasa', sub:'Seleccioná el tipo de carcasa para este equipo.', opts:CARCASA_SIMPLE_OPTS,
+    short:{'Carcasa 3D':'3D','Carcasa Metálica':'Metálica'} }
 };
 // Equipos cuyo botón "＋" vuelve a preguntar el tipo (en vez de sumar directo el mismo tipo ya elegido)
 const REPROMPT_ON_ADD = new Set(['safetouch_veh_curvo']);
@@ -1439,9 +1609,9 @@ function updSwCalc(){
   });
 
   // Switches definidos en Base de Red
-  const sw24 = baseSector.items['switch_24p'] || 0;
-  const sw8  = baseSector.items['switch_8p']  || 0;
-  const sw4  = baseSector.items['switch_4p']  || 0;
+  const sw24 = svQty('switch_24p');
+  const sw8  = svQty('switch_8p');
+  const sw4  = svQty('switch_4p');
 
   // Puertos disponibles:
   // Switch 4P → 4 puertos para equipos
@@ -1483,6 +1653,7 @@ function updSwCalc(){
     sw4val.style.color = 'var(--br)';
   }
   updEquipSummary();
+  if(typeof renderServerBoxes==='function') renderServerBoxes();
   // Podar configuraciones de Speedgate huérfanas (modelo sin equipos Simple cargados)
   if(typeof pruneSgConfigs==='function' && pruneSgConfigs()){
     if(typeof renderSG==='function') renderSG();
@@ -1499,14 +1670,14 @@ function pruneSgConfigs(){
 function stVehSafetouchTotal(){
   let tot=0;
   const cnt=its=>Object.entries(its||{}).forEach(([k,q])=>{ if(q>0 && baseKey(k)==='safetouch_veh_curvo') tot+=q*stVehSafetouchUnits(keyVar(k)); });
-  cnt(baseSector.items); sectors.forEach(s=>cnt(s.items));
+  servers.forEach(sv=>cnt(sv.items)); sectors.forEach(s=>cnt(s.items));
   return tot;
 }
 function updEquipSummary(){
   const host=document.getElementById('equipSummary'); if(!host) return;
   const agg={};
   const ad=its=>Object.entries(its||{}).forEach(([k,q])=>{ if(q>0 && !SUMMARY_HIDE.has(baseKey(k))) agg[k]=(agg[k]||0)+q; });
-  ad(baseSector.items); sectors.forEach(s=>ad(s.items));
+  servers.forEach(sv=>ad(sv.items)); sectors.forEach(s=>ad(s.items));
   const entries=Object.entries(agg).sort((a,b)=>b[1]-a[1]);
   if(!entries.length){ host.innerHTML='<div style="font-size:10px;color:var(--mt);font-style:italic">Sin equipos cargados</div>'; return; }
   let total=0;
@@ -1531,7 +1702,7 @@ function upProg(){
 function generateDiagram(){
   const proj = document.getElementById('p_rec').value || 'Diagrama de Red';
   const allSecItems = sectors.flatMap(s=>Object.keys(s.items).filter(k=>s.items[k]>0));
-  const baseHasItems = Object.keys(baseSector.items).some(k=>baseSector.items[k]>0);
+  const baseHasItems = servers.some(sv=>Object.keys(sv.items).some(k=>sv.items[k]>0));
   if(!allSecItems.length && !baseHasItems){ toast('⚠️ Agregá equipos antes de generar'); return; }
 
   const NS = 'http://www.w3.org/2000/svg';
@@ -1566,22 +1737,29 @@ function generateDiagram(){
           else{ salIdx++; dir = 'Salida'+(sal>1?(' '+salIdx):''); }
         }
         const nodeLb = (!dirEq && q>1) ? (lb+' '+(i+1)) : lb;
-        nodes.push({key:k, lb:nodeLb, dir, pid:secId+':'+k+':'+i});
+        nodes.push({key:k, lb:nodeLb, dir, pid:secId+':'+k+':'+i, secId:secId});
       }
     });
     return nodes;
   }
 
   // ── Build data ──────────────────────────────────────────────────────────
-  const baseNodes = expandItems(baseSector.items, 0);
-  const secData = sectors
-    .map(s=>({id:s.id, name:s.name, color:s.color, nodes:expandItems(s.items, s.id)}))
-    .filter(s=>s.nodes.length>0);
-
-  // All sections in order: base first, then sectors top-to-bottom
-  const allSections = [];
-  if(baseNodes.length) allSections.push({name:'⚙️ Base de Red', color:'#0891b2', nodes:baseNodes, isBase:true});
-  secData.forEach(s=>allSections.push({...s, isBase:false}));
+  // Un grupo por servidor: su propia Base de Red + los sectores que tiene asignados.
+  // Con 1 solo servidor, el resultado es idéntico al diagrama de siempre (sin bandera de grupo).
+  const multiServer = servers.length>1;
+  const serverGroups = servers.map(sv=>{
+    const baseNodes = expandItems(sv.items, sv.id);
+    const secData = sectors
+      .filter(s=>sectorServerId(s)===sv.id)
+      .map(s=>({id:s.id, name:s.name, color:s.color, nodes:expandItems(s.items, s.id)}))
+      .filter(s=>s.nodes.length>0);
+    const secs=[];
+    if(baseNodes.length) secs.push({name:multiServer?sv.name:'Base de Red', color:'#0891b2', nodes:baseNodes, isBase:true});
+    secData.forEach(s=>secs.push({...s, isBase:false}));
+    return {server:sv, sections:secs};
+  }).filter(g=>g.sections.length>0);
+  serverGroups.forEach(g=>{ if(multiServer) g.sections[0].groupLabel='🖥️ '+g.server.name; });
+  const allSections = serverGroups.flatMap(g=>g.sections);
 
   if(!allSections.length){ toast('⚠️ Sin equipos para diagramar'); return; }
 
@@ -1595,8 +1773,10 @@ function generateDiagram(){
   const trunkX = HPAD + TRUNK_X_OFFSET; // the vertical trunk line X
 
   // Compute Y positions for each section
+  const GROUP_BANNER_H = 34;
   let curY = VPAD + TITLE_H + 40;
   allSections.forEach(s => {
+    if(s.groupLabel){ s.bannerY = curY; curY += GROUP_BANNER_H + 14; }
     s.x = boxX;
     s.y = curY;
     s.w = boxW(s.nodes.length);
@@ -1706,28 +1886,39 @@ function generateDiagram(){
     lSect.appendChild(g);
   }
 
+  // ── Draw group banners (nombre del servidor, cuando hay más de uno) ───────
+  if(multiServer){
+    allSections.forEach(s=>{
+      if(!s.groupLabel) return;
+      const bw=Math.max(160, Math.min(340, s.groupLabel.length*9+40));
+      lBg.appendChild(el('rect',{x:boxX, y:s.bannerY, width:bw, height:GROUP_BANNER_H, rx:8, fill:'#1e293b'}));
+      const bt=el('text',{x:boxX+14, y:s.bannerY+GROUP_BANNER_H/2, 'text-anchor':'start','dominant-baseline':'middle','font-size':'13','font-family':'system-ui,-apple-system,sans-serif','font-weight':'800',fill:'#fff'});
+      bt.textContent=s.groupLabel; lBg.appendChild(bt);
+    });
+  }
+
   allSections.forEach(s=>drawSection(s));
 
   // ── Draw connections — left-side vertical trunk ────────────────────────
-  // Trunk X is fixed on the left
-  // For each section: horizontal line from trunkX to the left side of box, then arrow into box label
+  // Trunk X es fijo a la izquierda. Cada SERVIDOR tiene su propio tronco (no se conectan
+  // entre sí) para reflejar que son redes / Base de Red independientes.
+  // Para cada sección: línea horizontal desde el trunk hasta el borde izq. de la caja, con flecha hacia la etiqueta.
 
-  // Vertical trunk: from top of first section entry point to bottom of last
-  const firstSec = allSections[0];
-  const lastSec  = allSections[allSections.length-1];
-
-  // Entry point Y for each section = center of label bar
+  // Entry point Y para cada sección = centro de la barra de etiqueta
   allSections.forEach(s=>{ s.entryY = s.y + LBL_H/2; });
 
-  // Draw vertical trunk line (left side)
-  if(allSections.length > 1){
-    lConn.appendChild(el('line',{
-      x1:trunkX, y1:firstSec.entryY,
-      x2:trunkX, y2:lastSec.entryY,
-      stroke:TRUNK_C, 'stroke-width':TRUNK_W,
-      'stroke-linecap':'round'
-    }));
-  }
+  // Tronco vertical por grupo (servidor)
+  serverGroups.forEach(g=>{
+    if(g.sections.length>1){
+      const gf=g.sections[0], gl=g.sections[g.sections.length-1];
+      lConn.appendChild(el('line',{
+        x1:trunkX, y1:gf.entryY,
+        x2:trunkX, y2:gl.entryY,
+        stroke:TRUNK_C, 'stroke-width':TRUNK_W,
+        'stroke-linecap':'round'
+      }));
+    }
+  });
 
   // For each section: horizontal arm from trunk to box left edge
   allSections.forEach((s,i)=>{
@@ -1801,7 +1992,13 @@ function generateDiagram(){
     let pos;
     const bk=baseKey(nd.key);
     if(BASE_KEYS.has(bk)){
-      pos = SERVER_KEYS.has(bk) ? (tech.servPos==='Otro' ? (tech.servOtro||'') : (tech.servPos||'')) : (equipUbic[nd.key]||'');
+      const ndSv = (nd.secId!=null && isServerId(nd.secId)) ? getServerById(nd.secId) : servers[0];
+      const ubKey = (multiServer && nd.secId!=null) ? (nd.secId+':'+nd.key) : nd.key;
+      pos = SERVER_KEYS.has(bk)
+        ? (multiServer
+            ? (ndSv.servPos==='Otro' ? (ndSv.servOtro||'') : (ndSv.servPos||''))
+            : (tech.servPos==='Otro' ? (tech.servOtro||'') : (tech.servPos||'')))
+        : (equipUbic[ubKey]||'');
     } else { pos = equipPos[nd.pid]||''; }
     if(pos){
       const txt = pos.length>20 ? pos.slice(0,19)+'…' : pos;
@@ -1928,6 +2125,53 @@ function exportDiagramPDF(){
   const nm=((typeof v==='function'?v('p_rec'):'')||'Diagrama_Safecard');
   showPrintPreview(buildDiagramPrint(), 'Diagrama_'+nm);
   toast('👀 Vista previa del diagrama — imprimí o tocá "✕ Cerrar" para volver a editar');
+}
+
+// ── PDF · solo diagrama (vista en planta) de los Torniquetes/Speedgate ──────
+// A diferencia de exportPDF() (informe completo) o printSpeedgate() (dentro del informe,
+// con toda la ficha técnica), esto genera una vista previa que trae ÚNICAMENTE el
+// esquema/plano de cada configuración, agrupado por servidor si hay más de uno.
+function buildTorniquetesDiagramPrint(){
+  if(!sgConfigs.length) return '';
+  renderSG(); // asegura que cada #sgSch-<id> esté dibujado y al día
+  const multiServer = servers.length>1;
+  const css='<style>@page{size:A4 portrait;margin:8mm}'
+    +'#printRoot{font-family:Arial,Helvetica,sans-serif;color:#1e293b}'
+    +'#printRoot .tdsrv{font-size:12px;font-weight:800;color:#0891b2;margin:0 0 10px;text-transform:uppercase;letter-spacing:.5px;text-align:left}'
+    +'#printRoot .tdh{font-size:16px;font-weight:800;color:#1d4ed8;margin-bottom:4px;text-align:left}'
+    +'#printRoot .tdsub{font-size:11px;color:#64748b;margin-bottom:12px;text-align:left}'
+    +'#printRoot .tdsvbox{width:100%;text-align:center}'
+    +'#printRoot .tdsvbox svg{max-width:100%;height:auto}'
+    +'#printRoot .tdpage{page-break-after:always}'
+    +'#printRoot .tdpage:last-child{page-break-after:auto}'
+    +'</style>';
+  const groups = multiServer
+    ? servers.map(sv=>({sv, cfgs: sgConfigs.filter(c=>sgServerId(c)===sv.id)})).filter(g=>g.cfgs.length)
+    : [{sv:null, cfgs: sgConfigs}];
+  let body='';
+  groups.forEach(g=>{
+    g.cfgs.forEach(c=>{
+      const sch=document.getElementById('sgSch-'+c.id);
+      if(!sch || !sch.innerHTML) return;
+      const idx=sgConfigs.indexOf(c)+1;
+      const ancho=(c.pasos+1)*18+c.widths.reduce((a,b)=>a+b,0);
+      body+='<div class="tdpage">'
+        +(g.sv?('<div class="tdsrv">🖥️ '+_pesc(g.sv.name)+'</div>'):'')
+        +'<div class="tdh">Configuración '+idx+' · '+_pesc(c.modelo||'DS212')+'</div>'
+        +'<div class="tdsub">Pasos: '+c.pasos+' · Ancho total: '+ancho+' cm · Largo/Altura: 140 cm / 100 cm</div>'
+        +'<div class="tdsvbox">'+sch.innerHTML+'</div>'
+        +'</div>';
+    });
+  });
+  return body ? (css+body) : '';
+}
+function exportTorniquetesDiagramPDF(){
+  if(!sgConfigs.length || !hasSpeedgate()){ toast('⚠️ Agregá al menos una configuración de Speedgate primero'); return; }
+  const html=buildTorniquetesDiagramPrint();
+  if(!html){ toast('⚠️ No hay diagramas para exportar'); return; }
+  const nm=((typeof v==='function'?v('p_rec'):'')||'Torniquetes_Safecard');
+  showPrintPreview(html, 'Diagrama_Torniquetes_'+nm);
+  toast('👀 Vista previa del diagrama de torniquetes — imprimí o tocá "✕ Cerrar" para volver a editar');
 }
 
 function v(id){return document.getElementById(id)?.value||'';}
@@ -2107,7 +2351,7 @@ function exportExcel(){
   XLSX.utils.book_append_sheet(wb, ws1, '📋 Proyecto');
 
   // ══ HOJA 2: EQUIPAMIENTO ══════════════════════════════════════════════
-  const allSecs = [{...baseSector, id:0}, ...sectors];
+  const allSecs = [...servers.map(sv=>({...sv})), ...sectors];
   const secNames = allSecs.map(s=>s.name);
   const secColors = allSecs.map(s=>s.color.replace('#',''));
 
@@ -2137,9 +2381,9 @@ function exportExcel(){
 
   rows2.push([]);
   rows2.push(['CÁLCULO DE INFRAESTRUCTURA DE RED', '', '', '', '']);
-  rows2.push(['Switch 24P (puertos: 23)', '', baseSector.items['switch_24p']||0]);
-  rows2.push(['Switch 8P (puertos: 7)',  '', baseSector.items['switch_8p']||0]);
-  rows2.push(['Switch 4P (puertos: 4)',  '', baseSector.items['switch_4p']||0]);
+  rows2.push(['Switch 24P (puertos: 23)', '', svQty('switch_24p')]);
+  rows2.push(['Switch 8P (puertos: 7)',  '', svQty('switch_8p')]);
+  rows2.push(['Switch 4P (puertos: 4)',  '', svQty('switch_4p')]);
   rows2.push(['Equipos en sectores', '', sw1v]);
   rows2.push(['Puertos disponibles', '', portsDef]);
   rows2.push(['Puertos requeridos (+10%)', '', portsReq]);
@@ -2260,8 +2504,8 @@ function exportExcel(){
   XLSX.utils.book_append_sheet(wb, ws3, '🚪 Speedgate');
 
   // ══ HOJA 4: TÉCNICO ═══════════════════════════════════════════════════
-  const eqUse = (function(){ const agg={}; const ad=its=>Object.entries(its||{}).forEach(([k,q])=>{ if(q>0) agg[k]=(agg[k]||0)+q; }); ad(baseSector.items); sectors.forEach(s=>ad(s.items)); return Object.entries(agg).map(([key,qty])=>({key,qty,lb:lbOf(key)})); })();
-  const servTxt = tech.servPos==='Otro' ? ('Otro: '+(tech.servOtro||'—')) : (tech.servPos||'—');
+  const multiServerXl = servers.length>1;
+  const T_HDRS=new Set(['CABLEADO (metros lineales)','CANALIZACIONES (metros lineales)','NOTAS TÉCNICAS']);
   const rows4 = [
     ['INFORMACIÓN TÉCNICA · SAFECARD',''],
     [],
@@ -2278,22 +2522,28 @@ function exportExcel(){
     ['Soterrado (m)', tech.soterrado||'—'],
     ['Pasadas de losa 25 mm (Speedgate)', (sgSimplesQty()+sgDoblesQty())||'—'],
     [],
-    ['UBICACIÓN — BASE DE RED Y SERVIDOR',''],
-    ['Servidor', servTxt],
   ];
   if((v('p_occ')==='Safecard') && (tech.oocc||'').trim()){
-    const i=rows4.findIndex(r=>r[0]==='UBICACIÓN — BASE DE RED Y SERVIDOR');
-    rows4.splice(i,0, ['OBRAS CIVILES (SAFECARD)',''], ['Trabajos a realizar', (tech.oocc||'').trim()], []);
+    T_HDRS.add('OBRAS CIVILES (SAFECARD)');
+    rows4.push(['OBRAS CIVILES (SAFECARD)',''], ['Trabajos a realizar', (tech.oocc||'').trim()], []);
   }
-  const eqBase = eqUse.filter(e=>BASE_KEYS.has(baseKey(e.key)) && !SERVER_KEYS.has(baseKey(e.key)));
-  if(eqBase.length){ eqBase.forEach(e=> rows4.push([e.lb+' (×'+e.qty+')', equipUbic[e.key]||'—']) ); }
-  else { rows4.push(['Sin equipos de infraestructura','']); }
-  rows4.push([], ['NOTAS TÉCNICAS',''], [tech.notas||'—','']);
+  servers.forEach(sv=>{
+    const hdr = multiServerXl ? ('UBICACIÓN — '+sv.name.toUpperCase()) : 'UBICACIÓN — BASE DE RED Y SERVIDOR';
+    T_HDRS.add(hdr);
+    const servTxt = multiServerXl
+      ? (sv.servPos==='Otro' ? ('Otro: '+(sv.servOtro||'—')) : (sv.servPos||'—'))
+      : (tech.servPos==='Otro' ? ('Otro: '+(tech.servOtro||'—')) : (tech.servPos||'—'));
+    rows4.push([hdr,''], ['Servidor', servTxt]);
+    const eqBase = Object.entries(sv.items||{}).filter(([k,q])=>q>0 && BASE_KEYS.has(baseKey(k)) && !SERVER_KEYS.has(baseKey(k)));
+    if(eqBase.length){ eqBase.forEach(([k,q])=>{ const uk=multiServerXl?(sv.id+':'+k):k; rows4.push([lbOf(k)+' (×'+q+')', equipUbic[uk]||'—']); }); }
+    else { rows4.push(['Sin equipos de infraestructura','']); }
+    rows4.push([]);
+  });
+  rows4.push(['NOTAS TÉCNICAS',''], [tech.notas||'—','']);
   const ws4 = XLSX.utils.aoa_to_sheet(rows4);
   ws4['!cols'] = [{wch:38},{wch:50}];
   ws4['!merges'] = [{s:{r:0,c:0},e:{r:0,c:1}}];
   styleRange(ws4, 0,0,0,1, sTitle);
-  const T_HDRS=new Set(['CABLEADO (metros lineales)','CANALIZACIONES (metros lineales)','UBICACIÓN — BASE DE RED Y SERVIDOR','NOTAS TÉCNICAS']);
   rows4.forEach((row,ri)=>{ if(ri===0) return; const lbl=(row[0]||'').toString(); if(lbl==='') return; if(T_HDRS.has(lbl)){ styleRange(ws4,ri,0,ri,1,sSecHdr); return; } const alt=ri%2===0; styleCell(ws4,ri,0,alt?sLabelAlt:sLabel); styleCell(ws4,ri,1,alt?sValAlt:sVal); });
   ws4['!rows']=rows4.map((_,ri)=>ri===0?{hpt:28}:{hpt:20});
   XLSX.utils.book_append_sheet(wb, ws4, '🛠️ Técnico');
@@ -2309,9 +2559,9 @@ function exportExcel(){
 function copyJSON(){
   const json=JSON.stringify({
     project:v('p_rec')||'Diagrama',
-    sectors:[{name:baseSector.name,color:baseSector.color},...sectors.map(s=>({name:s.name,color:s.color}))],
+    sectors:[...servers.map(sv=>({name:sv.name,color:sv.color})),...sectors.map(s=>({name:s.name,color:s.color}))],
     items:[
-      ...Object.entries(baseSector.items).filter(([,q])=>q>0).map(([key,qty])=>({key,qty,sector:baseSector.name})),
+      ...servers.flatMap(sv=>Object.entries(sv.items).filter(([,q])=>q>0).map(([key,qty])=>({key,qty,sector:sv.name}))),
       ...sectors.flatMap(s=>Object.entries(s.items).filter(([,q])=>q>0).map(([key,qty])=>({key,qty,sector:s.name})))
     ]
   },null,2);
@@ -2335,7 +2585,7 @@ async function saveProject(){
     if(on.length) toggles[g.id]=on;
   });
   const data={ _safecard:1, savedAt:new Date().toISOString(), fields, toggles,
-    state:{ baseSector, sectors, sid, activeSecId, tech, equipUbic, equipPos, sgConfigs, sgUid, matrizDetalle, usabMatrix, usabNA, usabVer:3, projectPhotos, sectorPhotoNotes, dirSplit } };
+    state:{ servers, sectors, sid, activeSecId, tech, equipUbic, equipPos, sgConfigs, sgUid, matrizDetalle, usabMatrix, usabNA, usabVer:3, projectPhotos, sectorPhotoNotes, dirSplit } };
   const jsonStr = JSON.stringify(data);
   const nm=((typeof v==='function'?v('p_rec'):'')||'proyecto').replace(/[^a-z0-9]+/gi,'_').slice(0,40)||'proyecto';
   const filename='Safecard_'+nm+'.json';
@@ -2373,7 +2623,18 @@ function loadProject(file){
     let data; try{ data=JSON.parse(r.result); }catch(e){ toast('⚠️ Archivo inválido'); return; }
     if(!data || !data.state){ toast('⚠️ No es un proyecto Safecard'); return; }
     const st=data.state;
-    baseSector = st.baseSector || {id:0,name:'Base de Red',color:'#0891b2',items:{}};
+    // migración: proyectos guardados antes de "multi-servidor" tenían un único baseSector.
+    // Si el archivo ya trae servers[] (formato nuevo) se usa directo; si no, se envuelve el
+    // baseSector viejo como el primer (único) servidor.
+    if(Array.isArray(st.servers) && st.servers.length){
+      servers = st.servers;
+    } else if(st.baseSector){
+      servers = [{...st.baseSector, id:0}];
+    } else {
+      servers = [{id:0,name:'Base de Red',color:'#0891b2',items:{}}];
+    }
+    // asegurar campos de ubicación de servidor en servidores cargados de proyectos previos
+    servers.forEach(sv=>{ if(sv.servPos==null) sv.servPos=''; if(sv.servOtro==null) sv.servOtro=''; });
     sectors = Array.isArray(st.sectors)?st.sectors:[];
     sid = st.sid||0;
     tech = Object.assign({ utp:'',fibra:'',c220:'',emt:'',emtMed:'',pvc20:'',pvc25:'',soterrado:'',servPos:'',servOtro:'',notas:'',oocc:'' }, st.tech||{});
@@ -2445,7 +2706,7 @@ function loadProject(file){
     (function(){
       const vi = st.variantInfo || (st.safetouchCarc ? {safetouch: st.safetouchCarc} : null);
       if(!vi) return;
-      const secObj=(s)=>{ if(String(s)==='0') return baseSector; return sectors.find(x=>String(x.id)===String(s)); };
+      const secObj=(s)=>{ if(String(s)==='0') return servers[0]; return sectors.find(x=>String(x.id)===String(s)); };
       Object.keys(vi).forEach(bk=>{
         const bysec=vi[bk]||{};
         Object.keys(bysec).forEach(s=>{
@@ -2480,20 +2741,25 @@ function loadProject(file){
     const det=document.getElementById('integ-detail'); if(det) det.style.display=(integSi&&integSi.classList.contains('on'))?'block':'none';
     syncToggleDetails();
     if(typeof calcPlazoEntrega==='function') calcPlazoEntrega();
+    // asegurar que el campo "Cantidad de servidores" refleje los servers[] cargados
+    const pServersEl=document.getElementById('p_servers'); if(pServersEl) pServersEl.value=servers.length;
     // reconstruir contadores y nombres de accesos del recinto (Proyecto) desde los sectores cargados
     restoringRecinto=true;
-    [['veh','🚗 Acceso Vehicular','#3B82F6','n_veh'],
-     ['peat','🚶 Acceso Peatonal','#22C55E','n_peat'],
-     ['fac','🏋️ Facility','#A855F7','n_fac']].forEach(function(d){
-      const t=d[0], secs=sectors.filter(function(s){return s.fromInput && s.inputType===t;});
-      const count=secs.length?Math.max.apply(null,secs.map(function(s){return s.inputIdx||0;}))+1:0;
-      const el=document.getElementById(d[3]); if(el) el.value=count;
-      buildSectorInputs(t, count, d[1], d[2]);
-    });
+    if(servers.length<=1){
+      // formato de 1 solo servidor: cuadro único (comportamiento de siempre)
+      ACCESS_TYPES.forEach(function(t){
+        const count=reconstructAccessCount(servers[0].id, t.key);
+        const el=document.getElementById('n_'+t.key); if(el) el.value=count;
+        buildSectorInputs(t.key, count, t.boxLabel, t.color);
+      });
+    } else {
+      // multi-servidor: cada servidor reconstruye su propio bloque independiente
+      renderServerAccessBlocks();
+    }
     restoringRecinto=false;
     syncSectorsFromInputs();
     // re-render todo
-    const wantActive = (st.activeSecId!=null && (st.activeSecId===0 || sectors.some(s=>s.id===st.activeSecId))) ? st.activeSecId : 0;
+    const wantActive = (st.activeSecId!=null && (isServerId(st.activeSecId) || sectors.some(s=>s.id===st.activeSecId))) ? st.activeSecId : servers[0].id;
     activeSecId = wantActive;
     renderSectors(); renderLib(); renderSectorView(); updSwCalc(); upProg(); renderTech(); renderSG(); renderMatrix(); calcSMS();
     if(typeof updTorniState==='function') updTorniState();
@@ -2530,9 +2796,10 @@ function clearAll(){
     else el.value='';
   });
   sectors=[];sid=0;activeSecId=null;
-  baseSector={id:0,name:'Base de Red',color:'#0891b2',items:{}};
+  servers=[{id:0,name:'Base de Red',color:'#0891b2',items:{},servPos:'',servOtro:''}];
   tech={ utp:'', fibra:'', c220:'', emt:'', emtMed:'', pvc20:'', pvc25:'', soterrado:'', servPos:'', servOtro:'', notas:'', oocc:'' }; equipUbic={}; equipPos={};
   sgConfigs=[]; sgUid=0; matrizDetalle={}; usabMatrix={}; usabNA={}; projectPhotos=[]; sectorPhotoNotes={}; dirSplit={};
+  if(typeof renderServerAccessBlocks==='function') renderServerAccessBlocks();
   renderSectors();renderLib();renderSectorView();updSwCalc();upProg();renderTech();
   if(typeof renderMatrix==='function') renderMatrix();
   const svg=document.getElementById('diagSvg');
@@ -2554,7 +2821,7 @@ function portShortfall(){
   const TWO_PORT=new Set(['torniquete_safecard','torniquete_estadio','speedgate_doble']);
   let totPorts=0, tot=0;
   sectors.forEach(s=>Object.entries(s.items||{}).forEach(([k,q])=>{ tot+=q; totPorts+=q*(TWO_PORT.has(baseKey(k))?2:1); }));
-  const portsDef=(baseSector.items['switch_24p']||0)*23+(baseSector.items['switch_8p']||0)*7+(baseSector.items['switch_4p']||0)*4;
+  const portsDef=svQty('switch_24p')*23+svQty('switch_8p')*7+svQty('switch_4p')*4;
   const portsReq=Math.ceil(totPorts*1.10);
   const diff=portsDef-portsReq;
   return { tot, totPorts, portsDef, portsReq, deficit: diff<0, missing: diff<0?-diff:0, extra8p: diff<0?Math.ceil((-diff)/7):0 };
@@ -2687,8 +2954,10 @@ function calcSMS(){
 // Build dynamic sector name inputs
 
 
-function buildSectorInputs(type, count, label, color){
-  var container = document.getElementById('sector-inputs-' + type);
+function buildSectorInputs(type, count, label, color, serverId){
+  const svId = serverId!=null ? +serverId : servers[0].id;
+  const containerId = 'sector-inputs-' + type + (serverId!=null ? ('_'+svId) : '');
+  var container = document.getElementById(containerId);
   if(!container) return;
   var n = Math.min(Math.max(0, parseInt(count)||0), 20);
   if(!n){ container.innerHTML = ''; syncSectorsFromInputs(); return; }
@@ -2698,8 +2967,8 @@ function buildSectorInputs(type, count, label, color){
   if(prevInputs.length){
     for(var pi=0; pi<prevInputs.length; pi++) prevVals.push(prevInputs[pi].value);
   } else {
-    // sin inputs (ej. tras cargar un proyecto): tomar nombres desde los sectores existentes
-    sectors.filter(function(s){return s.fromInput && s.inputType===type;}).forEach(function(s){ prevVals[s.inputIdx||0]=s.name||''; });
+    // sin inputs (ej. tras cargar un proyecto): tomar nombres desde los sectores existentes de ESTE servidor
+    sectors.filter(function(s){return s.fromInput && s.inputType===type && sectorServerId(s)===svId;}).forEach(function(s){ prevVals[s.inputIdx||0]=s.name||''; });
   }
 
   var shortLabel = label.replace(/^\S+\s/,'');
@@ -2715,6 +2984,7 @@ function buildSectorInputs(type, count, label, color){
     html += '<input type="text"';
     html += ' data-sector-type="' + type + '"';
     html += ' data-sector-idx="' + i + '"';
+    html += ' data-sector-server="' + svId + '"';
     html += ' data-sector-color="' + color + '"';
     html += ' data-sector-label="' + label + '"';
     html += ' value="' + val + '"';
@@ -2745,8 +3015,10 @@ function syncSectorsFromInputs(){
     const type  = inp.dataset.sectorType;
     const idx   = +inp.dataset.sectorIdx;
     const label = inp.dataset.sectorLabel || type;
-    // Reuse existing sector (preserve items already assigned)
-    const existing = sectors.find(s => s.fromInput && s.inputType===type && s.inputIdx===idx);
+    const svId  = inp.dataset.sectorServer!=null && inp.dataset.sectorServer!=='' ? +inp.dataset.sectorServer : servers[0].id;
+    // Reuse existing sector (preserve items already assigned) — se identifica por tipo+índice+servidor,
+    // así "Acceso Vehicular 1" de Servidor 1 y de Servidor 2 son sectores independientes.
+    const existing = sectors.find(s => s.fromInput && s.inputType===type && s.inputIdx===idx && sectorServerId(s)===svId);
     if(existing){
       existing.name  = name;
       existing.color = color;
@@ -2754,7 +3026,7 @@ function syncSectorsFromInputs(){
     } else {
       newSectors.push({
         id: ++sid, name, color, items: {},
-        fromInput: true, inputType: type, inputIdx: idx
+        fromInput: true, inputType: type, inputIdx: idx, serverId: svId
       });
     }
   });
@@ -2804,14 +3076,16 @@ const SG_PLANS = {
 };
 
 function sgEsc(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function sgDominantModel(){ const m={}; const ad=o=>Object.entries(o||{}).forEach(([k,q])=>{ const b=baseKey(k); if(b==='speedgate'||b==='speedgate_doble'){ const v=keyVar(k); if(v) m[v]=(m[v]||0)+q; } }); ad(baseSector.items); sectors.forEach(s=>ad(s.items)); const keys=Object.keys(m); if(!keys.length) return 'DS212'; return keys.sort((a,b)=>m[b]-m[a])[0]; }
+function sgDominantModel(){ const m={}; const ad=o=>Object.entries(o||{}).forEach(([k,q])=>{ const b=baseKey(k); if(b==='speedgate'||b==='speedgate_doble'){ const v=keyVar(k); if(v) m[v]=(m[v]||0)+q; } }); servers.forEach(sv=>ad(sv.items)); sectors.forEach(s=>ad(s.items)); const keys=Object.keys(m); if(!keys.length) return 'DS212'; return keys.sort((a,b)=>m[b]-m[a])[0]; }
 function sgNew(){
   return { id:++sgUid, nombre:'Configuración '+(sgConfigs.length+1),
-    modelo: sgDominantModel(),
+    modelo: sgDominantModel(), serverId: servers[0].id,
     pasos:1, widths:[60], faceids:[false], leds:[true],
     qr:'Sí', cierre:'', base:'Sí', instal:'',
     perim:'No', perimM:'', perimTipo:'', obs:'' };
 }
+function sgSetServer(id,val){ const c=sgGet(id); if(c){ c.serverId=+val; renderSG(); } }
+function sgServerId(c){ return (c.serverId!=null && isServerId(c.serverId)) ? c.serverId : servers[0].id; }
 function sgSetModel(id,val){ const c=sgGet(id); if(c){ c.modelo=val; renderSG(); } }
 function sgGet(id){ return sgConfigs.find(c=>c.id===id); }
 function sgAdd(){ const m=sgAddModel(); if(m===null){ toast('⚠️ No hay Speedgate Simple disponibles (2 por configuración, del mismo modelo). Agregá Speedgate Simple en Equipamiento.'); return; } const c=sgNew(); c.modelo=m; sgConfigs.push(c); renderSG(); if(typeof upProg==='function') upProg(); }
@@ -2877,7 +3151,18 @@ function renderSG(){
       (fover?' <span style="color:#ef4444;font-weight:700">⚠️ excede</span>':'')+'</div>'+
     '</div>';
   }
-  list.innerHTML = banner + sgConfigs.map(sgCardHTML).join('');
+  let body='';
+  if(servers.length<=1){
+    body = sgConfigs.map(sgCardHTML).join('');
+  } else {
+    servers.forEach(sv=>{
+      const cs=sgConfigs.filter(c=>sgServerId(c)===sv.id);
+      if(!cs.length) return;
+      body+='<div style="font-size:12px;font-weight:800;color:var(--br);margin:14px 0 6px">🖥️ '+sv.name+'</div>';
+      body+=cs.map(sgCardHTML).join('');
+    });
+  }
+  list.innerHTML = banner + body;
   sgConfigs.forEach(c=>sgDrawSchematic(c));
 }
 
@@ -2939,7 +3224,11 @@ function sgCardHTML(c){
     '</div>'+
     '<div class="fg g2" style="margin-bottom:6px"><div class="f"><label>Modelo del Speedgate</label><select onchange="sgSetModel('+c.id+',this.value)" style="background:var(--in);border:1px solid var(--bd);color:var(--tx);border-radius:7px;padding:7px 9px;font-family:inherit;font-size:12px;font-weight:700">'+
       ['DS212','DS7100'].map(m=>'<option'+((c.modelo||'DS212')===m?' selected':'')+'>'+m+'</option>').join('')+
-    '</select></div></div>'+
+    '</select></div>'+
+    (servers.length>1 ? ('<div class="f"><label>Servidor</label><select onchange="sgSetServer('+c.id+',this.value)" style="background:var(--in);border:1px solid var(--bd);color:var(--tx);border-radius:7px;padding:7px 9px;font-family:inherit;font-size:12px;font-weight:700">'+
+      servers.map(sv=>'<option value="'+sv.id+'"'+(sgServerId(c)===sv.id?' selected':'')+'>🖥️ '+sv.name+'</option>').join('')+
+    '</select></div>') : '')+
+    '</div>'+
     '<div style="font-size:10px;color:var(--mt);margin-bottom:10px;line-height:1.4">⚠️ Los modelos <b>DS212</b> y <b>DS7100</b> no se mezclan en una misma línea. Si necesitás ambos, creá una configuración por separado para cada modelo.</div>'+
     '<div class="fg" style="margin-bottom:10px"><div class="f"><label>Cantidad de pasos</label><div class="tg">'+pasosSel+'</div></div></div>'+
     '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">'+pasoRows+'</div>'+
@@ -3084,8 +3373,11 @@ function addPhotos(input, secId){
 function photoDel(i){ projectPhotos.splice(i,1); renderTech(); }
 function photoCaption(i,val){ if(projectPhotos[i]) projectPhotos[i].caption=val; }
 function sectorPhotoLabel(secId){
-  if(secId===0 || secId==='0') return '⚙️ Base de Red';
   if(secId==null || secId==='') return '📎 General (sin sector)';
+  if(isServerId(+secId)){
+    const sv=getServerById(+secId);
+    return servers.length>1 ? ('🖥️ '+sv.name) : '⚙️ Base de Red';
+  }
   const s=sectors.find(x=>String(x.id)===String(secId));
   return '▸ '+(s?(s.name||('Sector '+s.id)):'Sector');
 }
@@ -3152,15 +3444,35 @@ function sumTramo(totalId, segId, key){
   segEl.focus();
   if(typeof toast==='function') toast('➕ +'+seg+' m · total '+nv+' m');
 }
-function techServPos(val){ tech.servPos=val; const w=document.getElementById('t_servotro_wrap'); if(w) w.style.display=(val==='Otro')?'flex':'none'; }
+function techServPos(val,svId){
+  if(svId!=null){
+    getServerById(svId).servPos=val;
+    const w=document.getElementById('t_servotro_wrap_'+svId); if(w) w.style.display=(val==='Otro')?'flex':'none';
+  } else {
+    tech.servPos=val;
+    const w=document.getElementById('t_servotro_wrap'); if(w) w.style.display=(val==='Otro')?'flex':'none';
+  }
+}
+function techSetServOtro(val,svId){
+  if(svId!=null){ getServerById(svId).servOtro=val; } else { tech.servOtro=val; }
+}
 function setEquipUbic(key,val){ equipUbic[key]=val; }
 function setEquipPos(key,val){ equipPos[key]=val; }
-function techApplyBase(val){ if(!val) return; techEquipInUse().filter(e=>BASE_KEYS.has(baseKey(e.key)) && !SERVER_KEYS.has(baseKey(e.key))).forEach(e=>{ equipUbic[e.key]=val; }); renderTech(); }
+function techApplyBase(val,svId){
+  if(!val) return;
+  if(svId!=null){
+    const sv=getServerById(svId);
+    Object.entries(sv.items||{}).filter(([k,q])=>q>0 && BASE_KEYS.has(baseKey(k)) && !SERVER_KEYS.has(baseKey(k))).forEach(([k])=>{ equipUbic[svId+':'+k]=val; });
+  } else {
+    techEquipInUse().filter(e=>BASE_KEYS.has(baseKey(e.key)) && !SERVER_KEYS.has(baseKey(e.key))).forEach(e=>{ equipUbic[e.key]=val; });
+  }
+  renderTech();
+}
 function techApplySector(secId,val){ if(!val) return; const s=sectors.find(x=>String(x.id)===String(secId)); if(!s) return; Object.entries(s.items||{}).filter(([k,q])=>q>0 && !BASE_KEYS.has(baseKey(k))).forEach(([k,q])=>{ for(let i=0;i<q;i++) equipPos[s.id+':'+k+':'+i]=val; }); renderTech(); }
 function techEquipInUse(){
   const agg={};
   const ad=its=>Object.entries(its||{}).forEach(([k,q])=>{ if(q>0) agg[k]=(agg[k]||0)+q; });
-  ad(baseSector.items); sectors.forEach(s=>ad(s.items));
+  servers.forEach(sv=>ad(sv.items)); sectors.forEach(s=>ad(s.items));
   return Object.entries(agg).map(([key,qty])=>({key,qty,lb:lbOf(key)}));
 }
 function techOtrosInstances(){
@@ -3202,39 +3514,75 @@ function techRow(label, sub, controlHtml){
     controlHtml+'</div>';
 }
 function updOOCC(){ const el=document.getElementById('p_occ'); const w=document.getElementById('t_oocc_wrap'); if(!w) return; w.style.display=(el&&el.value==='Safecard')?'':'none'; }
+function _techLbl(t,extra){ return '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 6px"><span style="font-size:10px;font-weight:700;color:var(--br);text-transform:uppercase;letter-spacing:.5px">'+t+'</span>'+(extra||'')+'</div>'; }
+function _techNone(t){ return '<div style="font-size:11px;color:var(--mt);font-style:italic;margin-bottom:10px">'+t+'</div>'; }
+// Bloque de "Ubicación y Servidor" para UN servidor puntual (usado tanto en modo single como dentro
+// de cada tarjeta independiente en modo multi-servidor).
+function _techServerBlockHtml(sv, multiServer){
+  const svArg = multiServer ? sv.id : 'null';
+  const posId = multiServer ? ('t_servpos_'+sv.id) : 't_servpos';
+  const otroWrapId = multiServer ? ('t_servotro_wrap_'+sv.id) : 't_servotro_wrap';
+  const otroId = multiServer ? ('t_servotro_'+sv.id) : 't_servotro';
+  const curPos = multiServer ? (sv.servPos||'') : (tech.servPos||'');
+  const curOtro = multiServer ? (sv.servOtro||'') : (tech.servOtro||'');
+  let h='<div class="fg g2" style="margin-bottom:10px">'
+    +'<div class="f"><label>Ubicación del servidor</label>'
+    +'<select id="'+posId+'" onchange="techServPos(this.value,'+svArg+')">'
+    +'<option value="">— Seleccionar —</option>'
+    +['Sala de control','Sala eléctrica','Sala data','Otro'].map(o=>'<option'+(curPos===o?' selected':'')+'>'+o+'</option>').join('')
+    +'</select></div>'
+    +'<div class="f" id="'+otroWrapId+'" style="display:'+(curPos==='Otro'?'flex':'none')+'"><label>Especificar ubicación</label>'
+    +'<input id="'+otroId+'" placeholder="Indicar sala / lugar" value="'+sgEsc(curOtro)+'" oninput="techSetServOtro(this.value,'+svArg+')"></div>'
+    +'</div>';
+  const base=Object.entries(sv.items||{}).filter(([k,q])=>q>0 && BASE_KEYS.has(baseKey(k)) && !SERVER_KEYS.has(baseKey(k))).map(([key,qty])=>({key,qty,lb:lbOf(key)}));
+  h+=_techLbl('🖧 Equipos de infraestructura — ubicación', base.length?applyAllHtml('techApplyBase(this.value,'+svArg+')'):'');
+  h+= base.length ? base.map(e=>{
+    const uk = multiServer ? (sv.id+':'+e.key) : e.key;
+    return techRow(e.lb+' ×'+e.qty,'',locSelectHtml(equipUbic[uk]||'','ubic',uk));
+  }).join('') : _techNone('Sin equipos de infraestructura cargados.');
+  h+=photoUploadBtnHtml(sv.id,true)+sectorPhotosMiniHtml(sv.id)+sectorDetailHtml(sv.id);
+  return h;
+}
+function renderTechBaseRed(){
+  const host=document.getElementById('techBaseRedHost'); if(!host) return;
+  const multiServer=servers.length>1;
+  if(!multiServer){
+    host.innerHTML=_techServerBlockHtml(servers[0], false);
+  } else {
+    host.innerHTML=servers.map(sv=>
+      '<div style="border:1px solid #0891b240;border-radius:10px;padding:10px 12px;margin-bottom:12px;background:#0891b208">'
+      +'<div style="font-size:11px;font-weight:800;color:#0891b2;margin-bottom:8px">🖥️ '+sgEsc(sv.name)+'</div>'
+      +_techServerBlockHtml(sv, true)
+      +'</div>'
+    ).join('');
+  }
+}
+function renderTechSectorPhotos(){
+  const host2=document.getElementById('techSectorPhotos'); if(!host2) return;
+  const multiServer=servers.length>1;
+  const secsWithEquipFor=svId=>sectorsForServer(svId).filter(s=>Object.entries(s.items||{}).some(([k,q])=>q>0 && !BASE_KEYS.has(baseKey(k))));
+  const secBlockHtml=s=>'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0 5px"><span style="font-size:10px;font-weight:700;color:var(--tx);padding:3px 8px;background:var(--dk3);border-radius:5px">▸ '+sgEsc(s.name||('Sector '+s.id))+'</span></div>'
+    +photoUploadBtnHtml(s.id,true)+sectorPhotosMiniHtml(s.id)+sectorDetailHtml(s.id);
+  if(!multiServer){
+    const secs=secsWithEquipFor(servers[0].id);
+    host2.innerHTML = secs.length ? secs.map(secBlockHtml).join('') : _techNone('Sin equipos de acceso cargados en sectores.');
+  } else {
+    host2.innerHTML = servers.map(sv=>{
+      const secs=secsWithEquipFor(sv.id);
+      const body = secs.length ? secs.map(secBlockHtml).join('') : _techNone('Sin equipos de acceso en sectores de este servidor.');
+      return '<div style="border:1px solid #0891b240;border-radius:10px;padding:10px 12px;margin-bottom:12px;background:#0891b208">'
+        +'<div style="font-size:11px;font-weight:800;color:#0891b2;margin-bottom:8px">🖥️ '+sgEsc(sv.name)+'</div>'
+        +body+'</div>';
+    }).join('');
+  }
+}
 function renderTech(){
   const sv=(id,val)=>{ const e=document.getElementById(id); if(e && e.value!==val) e.value=val; };
   sv('t_utp',tech.utp); sv('t_fibra',tech.fibra); sv('t_c220',tech.c220||''); sv('t_emt',tech.emt); sv('t_emtmed',tech.emtMed||''); sv('t_pvc20',tech.pvc20||''); sv('t_pvc25',tech.pvc25||''); sv('t_soterrado',tech.soterrado||''); sv('t_oocc',tech.oocc||''); updOOCC();
-  const sp2=document.getElementById('t_servpos'); if(sp2) sp2.value=tech.servPos;
-  const sw=document.getElementById('t_servotro_wrap'); if(sw) sw.style.display=(tech.servPos==='Otro')?'flex':'none';
-  sv('t_servotro',tech.servOtro); sv('t_notas',tech.notas);
+  sv('t_notas',tech.notas);
   const sgU=sgSimplesQty()+sgDoblesQty(); sv('t_sg_units', String(sgU)); sv('t_losa25', String(sgU));
-  const host=document.getElementById('techEquipList'); if(!host) return;
-  const base=techEquipInUse().filter(e=>BASE_KEYS.has(baseKey(e.key)) && !SERVER_KEYS.has(baseKey(e.key)));
-  const lbl=(t,extra)=>'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 6px"><span style="font-size:10px;font-weight:700;color:var(--br);text-transform:uppercase;letter-spacing:.5px">'+t+'</span>'+(extra||'')+'</div>';
-  const none=(t)=>'<div style="font-size:11px;color:var(--mt);font-style:italic;margin-bottom:10px">'+t+'</div>';
-  let html='';
-  html+=lbl('🖧 Base de Red — ubicación', base.length?applyAllHtml('techApplyBase(this.value)'):'');
-  html+= base.length ? base.map(e=>techRow(e.lb+' ×'+e.qty,'',locSelectHtml(equipUbic[e.key]||'','ubic',e.key))).join('') : none('Sin equipos de infraestructura cargados.');
-  if(base.length){ html+=photoUploadBtnHtml(0,true)+sectorPhotosMiniHtml(0)+sectorDetailHtml(0); }
-  host.innerHTML=html;
-
-  // Fotos por sector — solo la fila de foto (sin listado de posición por equipo)
-  const host2=document.getElementById('techSectorPhotos');
-  if(host2){
-    const secOrder=[]; const secNames={};
-    sectors.forEach(s=>{
-      const hasEq=Object.entries(s.items||{}).some(([k,q])=>q>0 && !BASE_KEYS.has(baseKey(k)));
-      if(hasEq){ secOrder.push(s.id); secNames[s.id]=s.name||('Sector '+s.id); }
-    });
-    if(!secOrder.length){ host2.innerHTML=none('Sin equipos de acceso cargados en sectores.'); }
-    else {
-      host2.innerHTML = secOrder.map(secId=>
-        '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0 5px"><span style="font-size:10px;font-weight:700;color:var(--tx);padding:3px 8px;background:var(--dk3);border-radius:5px">▸ '+sgEsc(secNames[secId])+'</span></div>'+
-        photoUploadBtnHtml(secId,true)+sectorPhotosMiniHtml(secId)+sectorDetailHtml(secId)
-      ).join('');
-    }
-  }
+  renderTechBaseRed();
+  renderTechSectorPhotos();
   renderPhotos();
 }
 
@@ -3311,7 +3659,7 @@ function printProyecto(){
 function printEquipSummary(){
   const agg={};
   const add=o=>Object.entries(o||{}).forEach(([k,q])=>{ if(q>0 && !SUMMARY_HIDE.has(baseKey(k))) agg[k]=(agg[k]||0)+q; });
-  add(baseSector.items); sectors.forEach(s=>add(s.items));
+  servers.forEach(sv=>add(sv.items)); sectors.forEach(s=>add(s.items));
   const keys=Object.keys(agg);
   if(!keys.length) return '';
   const idx=k=>{ const i=ALL.findIndex(l=>l.key===baseKey(k)); return i<0?999:i; };
@@ -3324,8 +3672,13 @@ function printEquipSummary(){
 }
 function printEquip(){
   let out='';
-  const baseRows=Object.entries(baseSector.items||{}).filter(([,q])=>q>0);
-  if(baseRows.length){ let r='<table class="pt"><tr><th>Equipo</th><th>Cant.</th></tr>'; baseRows.forEach(([k,q])=>{ r+='<tr><td>'+_pesc(_lblOf(k))+'</td><td>'+q+'</td></tr>'; }); r+='</table>'; out+=_pCard('🖧 Base de Red', r); }
+  const multiServer = servers.length>1;
+  servers.forEach(sv=>{
+    const baseRows=Object.entries(sv.items||{}).filter(([,q])=>q>0);
+    if(!baseRows.length) return;
+    let r='<table class="pt"><tr><th>Equipo</th><th>Cant.</th></tr>'; baseRows.forEach(([k,q])=>{ r+='<tr><td>'+_pesc(_lblOf(k))+'</td><td>'+q+'</td></tr>'; }); r+='</table>';
+    out+=_pCard('🖧 '+(multiServer?sv.name:'Base de Red'), r);
+  });
   sectors.forEach(s=>{ const rows=Object.entries(s.items||{}).filter(([,q])=>q>0); if(!rows.length) return; let r='<table class="pt"><tr><th>Equipo</th><th>Cant.</th></tr>'; rows.forEach(([k,q])=>{ r+='<tr><td>'+_pesc(_lblOf(k))+'</td><td>'+q+'</td></tr>'; }); r+='</table>'; out+=_pCard('📍 '+s.name, r); });
   return out || '<div class="pmt">Sin equipamiento cargado.</div>';
 }
@@ -3353,11 +3706,19 @@ function printTecnico(){
   const _sgU=sgSimplesQty()+sgDoblesQty(); if(_sgU>0) g+=_pKV('Pasadas de losa 25 mm (Speedgate)', _sgU+' (1 por Speedgate)');
   const _occ=(document.getElementById('p_occ')||{}).value||''; if(_occ==='Safecard' && (tech.oocc||'').trim()) g+=_pKV('Obras civiles (Safecard)', (tech.oocc||'').trim());
   out+=_pCard('🛠️ Cableado · Canalización', g);
-  const servTxt = tech.servPos==='Otro'?('Otro: '+(tech.servOtro||'—')):(tech.servPos||'—');
-  let r=_pKV('Servidor', servTxt);
-  const base=Object.entries(baseSector.items||{}).filter(([k,q])=>q>0 && !SERVER_KEYS.has(k));
-  base.forEach(([k,q])=>{ r+=_pKV(_lblOf(k)+' ×'+q, equipUbic[k]||'—'); });
-  out+=_pCard('🖥️ Base de Red — Ubicación y Servidor', r);
+  const multiServer = servers.length>1;
+  servers.forEach(sv=>{
+    const servTxt = multiServer
+      ? (sv.servPos==='Otro' ? ('Otro: '+(sv.servOtro||'—')) : (sv.servPos||'—'))
+      : (tech.servPos==='Otro' ? ('Otro: '+(tech.servOtro||'—')) : (tech.servPos||'—'));
+    let r=_pKV('Servidor', servTxt);
+    const items=Object.entries(sv.items||{}).filter(([k,q])=>q>0 && !SERVER_KEYS.has(baseKey(k)));
+    items.forEach(([k,q])=>{
+      const uk = multiServer ? (sv.id+':'+k) : k;
+      r+=_pKV(_lblOf(k)+' ×'+q, equipUbic[uk]||'—');
+    });
+    out+=_pCard('🖥️ '+(multiServer?(sv.name+' — Ubicación y Servidor'):'Base de Red — Ubicación y Servidor'), r);
+  });
   if(tech.notas) out+=_pCard('📝 Notas técnicas', '<div class="pnote">'+_pesc(tech.notas)+'</div>');
   return out;
 }
@@ -3379,14 +3740,9 @@ function printFirmas(){
   const blk=(rol)=>'<div class="pfirma"><div class="pfl"></div><div class="pfn">'+rol+'</div><div class="pfd">Nombre · RUT · Fecha · Firma</div></div>';
   return _pCard('Conformidad', stmt+'<div class="pfgrid">'+blk('Ejecutivo Comercial')+blk('ITO Técnico')+blk('Jefe de Instalaciones')+blk('Cliente — Conforme')+'</div>');
 }
-function printSectorSummary(){
-  if(!sectors.length) return '';
-  const rowsData=sectors.map(s=>({name:s.name||('Sector '+s.id),items:s.items,isBase:false}))
-    .concat([{name:'Base de Red',items:baseSector.items,isBase:true}]);
+function printSectorSummaryTable(rowsData, totalLabel){
   let totAll=0; const typesAllSet=new Set();
-  let t='<div style="page-break-before:always"></div>'
-    +'<div style="margin-bottom:6px;font-size:11px;font-weight:700;color:#1d4ed8">Resumen de Sectores Configurados</div>'
-    +'<table class="pmx"><thead><tr><th class="l">Sector</th><th>Total equipos</th><th>Tipos de equipo</th></tr></thead><tbody>';
+  let t='<table class="pmx"><thead><tr><th class="l">Sector</th><th>Total equipos</th><th>Tipos de equipo</th></tr></thead><tbody>';
   rowsData.forEach(r=>{
     const entries=Object.entries(r.items||{}).filter(([,q])=>q>0);
     const tot=entries.reduce((a,[,q])=>a+q,0);
@@ -3394,13 +3750,26 @@ function printSectorSummary(){
     totAll+=tot; typesSec.forEach(tp=>typesAllSet.add(tp));
     t+='<tr><td class="l">'+(r.isBase?'⚙️ ':'▸ ')+_pesc(r.name)+'</td><td class="'+(tot>0?'hl':'')+'">'+tot+'</td><td>'+typesSec.size+'</td></tr>';
   });
-  t+='<tr style="font-weight:700"><td class="l">Total ('+sectors.length+' sector'+(sectors.length!==1?'es':'')+' + Base de Red)</td><td class="hl">'+totAll+'</td><td>'+typesAllSet.size+'</td></tr>';
+  t+='<tr style="font-weight:700"><td class="l">'+totalLabel+'</td><td class="hl">'+totAll+'</td><td>'+typesAllSet.size+'</td></tr>';
   t+='</tbody></table>';
   return t;
 }
-function printMatrix(){
-  const cols=matrixSectors(); const rows=matrixRows();
-  if(!rows.length && !sectors.length) return '';
+function printSectorSummary(){
+  if(!sectors.length) return '';
+  let t='<div style="page-break-before:always"></div>'
+    +'<div style="margin-bottom:6px;font-size:11px;font-weight:700;color:#1d4ed8">Resumen de Sectores Configurados</div>';
+  if(servers.length<=1){
+    t+=printSectorSummaryTable(sectorSummaryRowsFor(servers[0],sectors), 'Total ('+sectors.length+' sector'+(sectors.length!==1?'es':'')+' + Base de Red)');
+    return t;
+  }
+  servers.forEach(sv=>{
+    const secs=sectorsForServer(sv.id);
+    t+='<div style="margin:10px 0 4px;font-size:10px;font-weight:800;color:#1d4ed8">🖥️ '+_pesc(sv.name)+'</div>';
+    t+=printSectorSummaryTable(sectorSummaryRowsFor(sv,secs), 'Total ('+secs.length+' sector'+(secs.length!==1?'es':'')+' + '+_pesc(sv.name)+')');
+  });
+  return t;
+}
+function printMatrixTable(cols, rows){
   let t='<table class="pmx"><thead><tr><th class="l">Equipos</th><th>Cant.</th><th class="l">Detalle</th>';
   cols.forEach(c=>{ t+='<th>'+_pesc(c.name)+'</th>'; });
   t+='<th>Entrada</th><th>Salida</th>';
@@ -3412,15 +3781,43 @@ function printMatrix(){
     t+='<td>'+(dt?dt.entrada:'')+'</td><td>'+(dt?dt.salida:'')+'</td>';
     t+='</tr>'; });
   t+='</tbody></table>';
-  let u=''; const ucols=sectors.map(s=>({id:s.id,name:s.name||('Sector '+s.id)}));
-  if(ucols.length){
+  return t;
+}
+function printUsabTable(cols){
+  let u='<table class="pmx"><thead><tr><th class="l">Detalle de uso y operación</th>';
+  cols.forEach(c=>{ u+='<th>'+_pesc(c.name)+'</th>'; });
+  u+='</tr></thead><tbody>';
+  USAB_FEATURES.forEach((f,fi)=>{ const na=!!usabNA[fi]; u+='<tr><td class="l"'+(na?' style="text-decoration:line-through;color:#94a3b8"':'')+'>'+_pesc(f)+(na?' (N/A)':'')+'</td>'; cols.forEach(c=>{ u+='<td'+(na?' style="color:#94a3b8"':'')+'>'+(na?'—':(usabMatrix[fi+':'+c.id]?'X':''))+'</td>'; }); u+='</tr>'; });
+  u+='</tbody></table>';
+  return u;
+}
+function printMatrix(){
+  const rows=matrixRows();
+  if(!rows.length && !sectors.length) return '';
+  let t='';
+  if(servers.length<=1){
+    t=printMatrixTable(matrixSectors(), rows);
+  } else {
+    matrixServerGroups().forEach(g=>{
+      const groupRows=rows.filter(it=>g.cols.reduce((s,c)=>s+matrixQty(it.key,c.id),0)>0);
+      if(!groupRows.length) return;
+      t+='<div class="pmx-sub">🖥️ '+_pesc(g.sv.name)+'</div>';
+      t+=printMatrixTable(g.cols, groupRows);
+    });
+  }
+  let u=''; const hasSecs=sectors.length>0;
+  if(hasSecs){
     u='<div style="page-break-before:always"></div>';
     u+='<div class="pmx-sub">Configuración de Usabilidad</div>';
-    u+='<table class="pmx"><thead><tr><th class="l">Detalle de uso y operación</th>';
-    ucols.forEach(c=>{ u+='<th>'+_pesc(c.name)+'</th>'; });
-    u+='</tr></thead><tbody>';
-    USAB_FEATURES.forEach((f,fi)=>{ const na=!!usabNA[fi]; u+='<tr><td class="l"'+(na?' style="text-decoration:line-through;color:#94a3b8"':'')+'>'+_pesc(f)+(na?' (N/A)':'')+'</td>'; ucols.forEach(c=>{ u+='<td'+(na?' style="color:#94a3b8"':'')+'>'+(na?'—':(usabMatrix[fi+':'+c.id]?'X':''))+'</td>'; }); u+='</tr>'; });
-    u+='</tbody></table>';
+    if(servers.length<=1){
+      u+=printUsabTable(sectors.map(s=>({id:s.id,name:s.name||('Sector '+s.id)})));
+    } else {
+      servers.forEach(sv=>{
+        const secs=sectorsForServer(sv.id); if(!secs.length) return;
+        u+='<div class="pmx-sub">🖥️ '+_pesc(sv.name)+'</div>';
+        u+=printUsabTable(secs.map(s=>({id:s.id,name:s.name||('Sector '+s.id)})));
+      });
+    }
   }
   const css='<style>'
     +'#printRoot table.pmx{border-collapse:collapse;width:100%;font-size:7.5px;table-layout:fixed;margin-bottom:10px}'
@@ -3546,10 +3943,7 @@ function usabRowAll(fi){ delete usabNA[fi]; sectors.forEach(s=>{ usabMatrix[fi+'
 function usabRowNA(fi){ if(usabNA[fi]){ delete usabNA[fi]; } else { usabNA[fi]=true; sectors.forEach(s=>{ delete usabMatrix[fi+':'+s.id]; }); } renderUsab(); }
 function usabAllOn(){ if(!sectors.length){ toast('⚠️ Definí accesos primero'); return; } usabNA={}; USAB_FEATURES.forEach((f,fi)=>sectors.forEach(s=>{ usabMatrix[fi+':'+s.id]=true; })); renderUsab(); toast('✓ Todas marcadas'); }
 function usabClear(){ usabMatrix={}; usabNA={}; renderUsab(); }
-function renderUsab(){
-  const host=document.getElementById('usabHost'); if(!host) return;
-  const cols=sectors.map(s=>({id:s.id,name:s.name||('Sector '+s.id)}));
-  if(!cols.length){ host.innerHTML='<div style="color:var(--mt);font-style:italic;padding:14px 0">Definí accesos/sectores en la pestaña <b>Proyecto</b> para configurar la usabilidad por acceso.</div>'; return; }
+function usabTableHTML(cols){
   let h='<div style="overflow:auto;max-height:60vh;border:1px solid var(--bd);border-radius:8px"><table class="mtx"><thead><tr><th class="mx-eq">Detalle de uso y operación</th><th class="mx-act">Acción</th>';
   cols.forEach(c=>{ h+='<th class="mx-sec">'+sgEsc(c.name)+'</th>'; });
   h+='</tr></thead><tbody>';
@@ -3561,17 +3955,38 @@ function renderUsab(){
     h+='</tr>';
   });
   h+='</tbody></table></div>';
-  host.innerHTML=h;
+  return h;
+}
+function renderUsab(){
+  const host=document.getElementById('usabHost'); if(!host) return;
+  if(!sectors.length){ host.innerHTML='<div style="color:var(--mt);font-style:italic;padding:14px 0">Definí accesos/sectores en la pestaña <b>Proyecto</b> para configurar la usabilidad por acceso.</div>'; return; }
+  if(servers.length<=1){
+    host.innerHTML=usabTableHTML(sectors.map(s=>({id:s.id,name:s.name||('Sector '+s.id)})));
+    return;
+  }
+  let out='';
+  servers.forEach(sv=>{
+    const secs=sectorsForServer(sv.id);
+    if(!secs.length) return;
+    out+='<div style="font-size:12px;font-weight:800;color:var(--br);margin:14px 0 6px">🖥️ '+sgEsc(sv.name)+'</div>';
+    out+=usabTableHTML(secs.map(s=>({id:s.id,name:s.name||('Sector '+s.id)})));
+  });
+  host.innerHTML=out || '<div style="color:var(--mt);font-style:italic;padding:14px 0">Definí accesos/sectores en la pestaña <b>Proyecto</b> para configurar la usabilidad por acceso.</div>';
 }
 let showZeroRows = false;
 function setMatrizDet(key,val){ matrizDetalle[key]=val; }
 function toggleZeroRows(){ showZeroRows=!showZeroRows; const b=document.getElementById('mtxZeroBtn'); if(b) b.textContent=showZeroRows?'Ocultar equipos en 0':'Mostrar equipos en 0'; renderMatrix(); }
-function matrixSectors(){ return [{id:0,name:'Base de Red'}].concat(sectors.map(s=>({id:s.id,name:s.name||('Sector '+s.id)}))); }
-function renderSectorSummary(){
-  const host=document.getElementById('sectorSummaryHost'); if(!host) return;
-  if(!sectors.length){ host.innerHTML='<div style="color:var(--mt);font-style:italic;padding:6px 0 12px">Sin sectores definidos — creálos en la pestaña <b>Proyecto</b>.</div>'; return; }
-  const rowsData=sectors.map(s=>({name:s.name||('Sector '+s.id),color:s.color,items:s.items,isBase:false}))
-    .concat([{name:'Base de Red',color:baseSector.color,items:baseSector.items,isBase:true}]);
+function matrixSectors(){ return servers.map(sv=>({id:sv.id,name:serverLabel(sv)})).concat(sectors.map(s=>({id:s.id,name:s.name||('Sector '+s.id)}))); }
+// Un grupo por servidor: el propio servidor + los sectores que tiene asignados. Se usa para
+// mostrar secciones separadas (Matriz/Usabilidad) cuando hay más de un servidor.
+function matrixServerGroups(){
+  return servers.map(sv=>({ sv, cols:[{id:sv.id,name:serverLabel(sv)}].concat(sectorsForServer(sv.id).map(s=>({id:s.id,name:s.name||('Sector '+s.id)}))) }));
+}
+function sectorSummaryRowsFor(sv, secs){
+  return secs.map(s=>({name:s.name||('Sector '+s.id),color:s.color,items:s.items,isBase:false}))
+    .concat([{name:sv.name,color:sv.color,items:sv.items,isBase:true}]);
+}
+function sectorSummaryTableHTML(rowsData, totalLabel){
   let h='<div style="overflow:auto;border:1px solid var(--bd);border-radius:8px;margin-bottom:14px"><table class="mtx"><thead><tr><th class="mx-eq">Sector</th><th>Total equipos</th><th>Tipos de equipo</th></tr></thead><tbody>';
   let totAll=0; const typesAllSet=new Set();
   rowsData.forEach(r=>{
@@ -3583,11 +3998,27 @@ function renderSectorSummary(){
       +'<td class="mx-cant'+(tot>0?' hl':'')+'">'+tot+'</td>'
       +'<td class="mx-cant">'+typesSec.size+'</td></tr>';
   });
-  h+='<tr style="font-weight:800;background:var(--dk3)"><td class="mx-eq">Total ('+sectors.length+' sector'+(sectors.length!==1?'es':'')+' + Base de Red)</td><td class="mx-cant hl">'+totAll+'</td><td class="mx-cant">'+typesAllSet.size+'</td></tr>';
+  h+='<tr style="font-weight:800;background:var(--dk3)"><td class="mx-eq">'+totalLabel+'</td><td class="mx-cant hl">'+totAll+'</td><td class="mx-cant">'+typesAllSet.size+'</td></tr>';
   h+='</tbody></table></div>';
-  host.innerHTML=h;
+  return h;
 }
-function matrixQty(key, secId){ const its = secId===0?baseSector.items:((sectors.find(s=>s.id===secId)||{}).items||{}); return its[key]||0; }
+function renderSectorSummary(){
+  const host=document.getElementById('sectorSummaryHost'); if(!host) return;
+  if(!sectors.length){ host.innerHTML='<div style="color:var(--mt);font-style:italic;padding:6px 0 12px">Sin sectores definidos — creálos en la pestaña <b>Proyecto</b>.</div>'; return; }
+  if(servers.length<=1){
+    const rowsData=sectorSummaryRowsFor(servers[0], sectors);
+    host.innerHTML=sectorSummaryTableHTML(rowsData, 'Total ('+sectors.length+' sector'+(sectors.length!==1?'es':'')+' + Base de Red)');
+    return;
+  }
+  let out='';
+  servers.forEach(sv=>{
+    const secs=sectorsForServer(sv.id);
+    out+='<div style="font-size:11px;font-weight:800;color:var(--br);margin:10px 0 4px">🖥️ '+sgEsc(sv.name)+'</div>';
+    out+=sectorSummaryTableHTML(sectorSummaryRowsFor(sv,secs), 'Total ('+secs.length+' sector'+(secs.length!==1?'es':'')+' + '+sv.name+')');
+  });
+  host.innerHTML=out;
+}
+function matrixQty(key, secId){ const its = isServerId(secId)?getServerById(secId).items:((sectors.find(s=>s.id===secId)||{}).items||{}); return its[key]||0; }
 function dirTotals(key){
   if(!isDirEq(key)) return null;
   let entrada=0, total=0;
@@ -3597,7 +4028,7 @@ function dirTotals(key){
 function matrixRows(){
   const cols=matrixSectors();
   const present={};
-  cols.forEach(c=>{ const its = c.id===0?baseSector.items:((sectors.find(s=>s.id===c.id)||{}).items||{}); Object.keys(its||{}).forEach(k=>{ if(its[k]>0) present[k]=true; }); });
+  cols.forEach(c=>{ const its = isServerId(c.id)?getServerById(c.id).items:((sectors.find(s=>s.id===c.id)||{}).items||{}); Object.keys(its||{}).forEach(k=>{ if(its[k]>0) present[k]=true; }); });
   const idx=k=>{ const i=ALL.findIndex(l=>l.key===baseKey(k)); return i<0?999:i; };
   const keys=Object.keys(present).sort((a,b)=>{ const d=idx(a)-idx(b); if(d) return d; return a<b?-1:(a>b?1:0); });
   return keys.filter(k=> cols.reduce((s,c)=>s+matrixQty(k,c.id),0)>0 ).map(k=>({key:k, lb:lbOf(k)}));
@@ -3619,13 +4050,7 @@ function matrixDetCell(key){
   }
   return '<input value="'+sgEsc(matrizDetalle[key]||'')+'" oninput="setMatrizDet(\''+sgEsc(key)+'\',this.value)">';
 }
-function renderMatrix(){
-  renderSectorSummary();
-  const host=document.getElementById('matrixHost'); if(!host) return;
-  const rec=(document.getElementById('p_rec')||{}).value||'';
-  const tEl=document.getElementById('mtxTitle'); if(tEl) tEl.textContent = rec ? ('Matriz de Equipos · '+rec) : 'Matriz de Equipos';
-  const cols=matrixSectors(); const rows=matrixRows();
-  if(!rows.length){ host.innerHTML='<div style="color:var(--mt);font-style:italic;padding:20px 0">No hay equipos cargados. Agregalos en la pestaña Equipamiento.</div>'; renderUsab(); return; }
+function matrixTableHTML(cols, rows){
   let h='<div style="overflow:auto;max-height:calc(100svh - 220px);border:1px solid var(--bd);border-radius:8px"><table class="mtx">';
   h+='<thead><tr><th class="mx-eq">Equipos</th><th>Cantidad de equipos</th><th>Detalle</th>';
   cols.forEach(c=>{ h+='<th class="mx-sec">'+sgEsc(c.name)+'</th>'; });
@@ -3642,12 +4067,30 @@ function renderMatrix(){
     h+='</tr>';
   });
   h+='</tbody></table></div>';
-  host.innerHTML=h;
+  return h;
+}
+function renderMatrix(){
+  renderSectorSummary();
+  const host=document.getElementById('matrixHost'); if(!host) return;
+  const rec=(document.getElementById('p_rec')||{}).value||'';
+  const tEl=document.getElementById('mtxTitle'); if(tEl) tEl.textContent = rec ? ('Matriz de Equipos · '+rec) : 'Matriz de Equipos';
+  const rows=matrixRows();
+  if(!rows.length){ host.innerHTML='<div style="color:var(--mt);font-style:italic;padding:20px 0">No hay equipos cargados. Agregalos en la pestaña Equipamiento.</div>'; renderUsab(); return; }
+  if(servers.length<=1){
+    host.innerHTML=matrixTableHTML(matrixSectors(), rows);
+  } else {
+    let out='';
+    matrixServerGroups().forEach(g=>{
+      const groupRows=rows.filter(it=>g.cols.reduce((s,c)=>s+matrixQty(it.key,c.id),0)>0);
+      if(!groupRows.length) return;
+      out+='<div style="font-size:12px;font-weight:800;color:var(--br);margin:14px 0 6px">🖥️ '+sgEsc(g.sv.name)+'</div>';
+      out+=matrixTableHTML(g.cols, groupRows);
+    });
+    host.innerHTML=out || '<div style="color:var(--mt);font-style:italic;padding:20px 0">No hay equipos cargados. Agregalos en la pestaña Equipamiento.</div>';
+  }
   renderUsab();
 }
-function buildMatrixPrint(){
-  const rec=(document.getElementById('p_rec')||{}).value||'';
-  const cols=matrixSectors(); const rows=matrixRows();
+function _mxpTable(cols, rows){
   let t='<table class="mxp"><thead><tr><th class="l">Equipos</th><th>Cantidad de equipos</th><th class="l">Detalle</th>';
   cols.forEach(c=>{ t+='<th>'+_pesc(c.name)+'</th>'; });
   t+='<th>Entrada</th><th>Salida</th>';
@@ -3659,6 +4102,30 @@ function buildMatrixPrint(){
     t+='<td>'+(dt?dt.entrada:'')+'</td><td>'+(dt?dt.salida:'')+'</td>';
     t+='</tr>'; });
   t+='</tbody></table>';
+  return t;
+}
+function _mxpUsabTable(cols){
+  let u='<table class="mxp"><thead><tr><th class="l">Detalle de uso y operación</th>';
+  cols.forEach(c=>{ u+='<th>'+_pesc(c.name)+'</th>'; });
+  u+='</tr></thead><tbody>';
+  USAB_FEATURES.forEach((f,fi)=>{ const na=!!usabNA[fi]; u+='<tr><td class="l"'+(na?' style="text-decoration:line-through;color:#94a3b8"':'')+'>'+_pesc(f)+(na?' (N/A)':'')+'</td>'; cols.forEach(c=>{ u+='<td'+(na?' style="color:#94a3b8"':'')+'>'+(na?'—':(usabMatrix[fi+':'+c.id]?'X':''))+'</td>'; }); u+='</tr>'; });
+  u+='</tbody></table>';
+  return u;
+}
+function buildMatrixPrint(){
+  const rec=(document.getElementById('p_rec')||{}).value||'';
+  const rows=matrixRows();
+  let t='';
+  if(servers.length<=1){
+    t=_mxpTable(matrixSectors(), rows);
+  } else {
+    matrixServerGroups().forEach(g=>{
+      const groupRows=rows.filter(it=>g.cols.reduce((s,c)=>s+matrixQty(it.key,c.id),0)>0);
+      if(!groupRows.length) return;
+      t+='<div class="mxh" style="font-size:13px;margin-top:10px">🖥️ '+_pesc(g.sv.name)+'</div>';
+      t+=_mxpTable(g.cols, groupRows);
+    });
+  }
   const css='<style>@page{size:A4 landscape;margin:8mm}'
     +'#printRoot{font-family:Arial,Helvetica,sans-serif;color:#1e293b}'
     +'#printRoot .mxh{font-size:17px;font-weight:800;color:#1d4ed8;margin-bottom:8px}'
@@ -3669,15 +4136,19 @@ function buildMatrixPrint(){
     +'#printRoot .mxp td.hl{background:#fde047;font-weight:700}'
     +'</style>';
   // tabla de usabilidad (página aparte)
-  let u=''; const ucols=sectors.map(s=>({id:s.id,name:s.name||('Sector '+s.id)}));
-  if(ucols.length){
+  let u='';
+  if(sectors.length){
     u='<div class="mxh" style="page-break-before:always">Configuración de Usabilidad'+(rec?(' — '+_pesc(rec)):'')+'</div>';
     u+='<div style="font-size:9px;color:#475569;margin-bottom:6px">Marca (X) cómo opera cada acceso.</div>';
-    u+='<table class="mxp"><thead><tr><th class="l">Detalle de uso y operación</th>';
-    ucols.forEach(c=>{ u+='<th>'+_pesc(c.name)+'</th>'; });
-    u+='</tr></thead><tbody>';
-    USAB_FEATURES.forEach((f,fi)=>{ const na=!!usabNA[fi]; u+='<tr><td class="l"'+(na?' style="text-decoration:line-through;color:#94a3b8"':'')+'>'+_pesc(f)+(na?' (N/A)':'')+'</td>'; ucols.forEach(c=>{ u+='<td'+(na?' style="color:#94a3b8"':'')+'>'+(na?'—':(usabMatrix[fi+':'+c.id]?'X':''))+'</td>'; }); u+='</tr>'; });
-    u+='</tbody></table>';
+    if(servers.length<=1){
+      u+=_mxpUsabTable(sectors.map(s=>({id:s.id,name:s.name||('Sector '+s.id)})));
+    } else {
+      servers.forEach(sv=>{
+        const secs=sectorsForServer(sv.id); if(!secs.length) return;
+        u+='<div class="mxh" style="font-size:13px">🖥️ '+_pesc(sv.name)+'</div>';
+        u+=_mxpUsabTable(secs.map(s=>({id:s.id,name:s.name||('Sector '+s.id)})));
+      });
+    }
   }
   return css+'<div class="mxh">'+_pesc(rec||'Resumen de Equipos')+'</div>'+t+printSectorSummary()+u;
 }
