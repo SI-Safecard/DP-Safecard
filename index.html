@@ -1756,6 +1756,13 @@ function generateDiagram(){
     const secs=[];
     if(baseNodes.length) secs.push({name:multiServer?sv.name:'Base de Red', color:'#0891b2', nodes:baseNodes, isBase:true});
     secData.forEach(s=>secs.push({...s, isBase:false}));
+    // Dibujo de cada configuración de Speedgate (con sus LED y Face ID) asignada a este servidor
+    sgConfigs.filter(c=>sgServerId(c)===sv.id).forEach(c=>{
+      const b=sgSchematicBuild(c);
+      const sc=Math.min(1, 900/b.W);
+      secs.push({name:'Torniquete — '+(c.nombre||'Configuración')+' · '+(c.modelo||'DS212'), color:'#E8541A', nodes:[], isBase:false, isSG:true, sgB:b, sgScale:sc,
+        sgW:Math.round(b.W*sc)+BOX_PAD_X*2, sgH:LBL_H+Math.round(b.H*sc)+34});
+    });
     return {server:sv, sections:secs};
   }).filter(g=>g.sections.length>0);
   serverGroups.forEach(g=>{ if(multiServer) g.sections[0].groupLabel='🖥️ '+g.server.name; });
@@ -1765,7 +1772,9 @@ function generateDiagram(){
 
   // ── Compute dimensions ──────────────────────────────────────────────────
   // SVG width = widest section + left margin for trunk + right padding
-  const maxBoxW = Math.max(...allSections.map(s=>boxW(s.nodes.length)));
+  const secW = s => s.isSG ? s.sgW : boxW(s.nodes.length);
+  const secH = s => s.isSG ? s.sgH : boxH(s.nodes.length);
+  const maxBoxW = Math.max(...allSections.map(secW));
   const svgW = Math.max(700, HPAD + TRUNK_X_OFFSET + 20 + maxBoxW + HPAD);
 
   // Box X: all boxes left-aligned after the trunk area
@@ -1779,8 +1788,8 @@ function generateDiagram(){
     if(s.groupLabel){ s.bannerY = curY; curY += GROUP_BANNER_H + 14; }
     s.x = boxX;
     s.y = curY;
-    s.w = boxW(s.nodes.length);
-    s.h = boxH(s.nodes.length);
+    s.w = secW(s);
+    s.h = secH(s);
     curY += s.h + SEC_GAP_Y;
   });
   const svgH = Math.max(600, curY + 20);
@@ -1878,7 +1887,7 @@ function generateDiagram(){
     g.appendChild(el('line',{x1:s.x,y1:s.y+LBL_H,x2:s.x+s.w,y2:s.y+LBL_H,stroke:s.color+'40','stroke-width':'1'}));
 
     const icon=el('text',{x:s.x+16,y:s.y+LBL_H/2,'text-anchor':'middle','dominant-baseline':'middle','font-size':'13','font-family':'system-ui,sans-serif'});
-    icon.textContent=s.isBase?'⚙️':'📍'; g.appendChild(icon);
+    icon.textContent=s.isBase?'⚙️':(s.isSG?'🚪':'📍'); g.appendChild(icon);
 
     const lt=el('text',{x:s.x+32,y:s.y+LBL_H/2,'text-anchor':'start','font-size':'13','font-family':'system-ui,-apple-system,sans-serif','font-weight':'700',fill:'white','dominant-baseline':'middle'});
     lt.textContent=s.name; g.appendChild(lt);
@@ -2038,6 +2047,31 @@ function generateDiagram(){
 
   allSections.forEach(s=>s.nodePositions.forEach(n=>drawNode(n,s.color)));
 
+  // ── Dibujo de torniquetes (cuerpos, pasos, LED y Face ID) dentro de su caja ──
+  allSections.filter(s=>s.isSG).forEach(s=>{
+    const b=s.sgB, sc=s.sgScale;
+    const gx=s.x+(s.w-b.W*sc)/2, gy=s.y+LBL_H+6;
+    const g=el('g',{transform:'translate('+gx+','+gy+') scale('+sc+')'});
+    g.innerHTML=b.inner;
+    lNode.appendChild(g);
+    // leyenda
+    const ly=s.y+s.h-16;
+    const items=[['#E8541A','SIMPLE = extremo'],['#a78bfa','DOBLE = centro']];
+    let lx=s.x+BOX_PAD_X;
+    items.forEach(it=>{
+      lNode.appendChild(el('rect',{x:lx,y:ly-5,width:10,height:10,rx:2,fill:it[0]}));
+      const t=el('text',{x:lx+14,y:ly,'font-size':'9','font-family':'system-ui,sans-serif',fill:'#475569','dominant-baseline':'middle'}); t.textContent=it[1]; lNode.appendChild(t);
+      lx+=14+it[1].length*5.2+14;
+    });
+    if(b.nEquip>0){
+      const fg=el('g',{transform:'translate('+(lx-7.5+7.5)+','+(ly-7.5)+')'}); fg.innerHTML=b.faceIcon(7.5,7.5); lNode.appendChild(fg);
+      const ft=el('text',{x:lx+17,y:ly,'font-size':'9','font-family':'system-ui,sans-serif',fill:'#475569','dominant-baseline':'middle'}); ft.textContent='Face ID'; lNode.appendChild(ft);
+      lx+=17+45;
+      const lg=el('g',{transform:'translate('+lx+','+(ly-7.5)+')'}); lg.innerHTML=b.ledIcon(7.5,7.5); lNode.appendChild(lg);
+      const lt2=el('text',{x:lx+17,y:ly,'font-size':'9','font-family':'system-ui,sans-serif',fill:'#475569','dominant-baseline':'middle'}); lt2.textContent='LED'; lNode.appendChild(lt2);
+    }
+  });
+
   // ── Finalize ──────────────────────────────────────────────────────────────
   document.getElementById('diagLbl').textContent = proj + ' — Diagrama de Red Estructurado';
   sp('diagrama', document.getElementById('navDiag'));
@@ -2124,7 +2158,13 @@ function exportDiagramPDF(){
   if(!svg || !svg.getAttribute('width')){ toast('⚠️ Generá el diagrama primero'); return; }
   const nm=((typeof v==='function'?v('p_rec'):'')||'Diagrama_Safecard');
   showPrintPreview(buildDiagramPrint(), 'Diagrama_'+nm);
-  toast('👀 Vista previa del diagrama — imprimí o tocá "✕ Cerrar" para volver a editar');
+  // Abre directo el diálogo de impresión → "Guardar como PDF" con SOLO el diagrama
+  // (el resto de la app queda oculto por @media print). El nombre del PDF = nombre del diagrama.
+  const oldTitle=document.title;
+  document.title=('Diagrama_'+nm).replace(/[^a-z0-9]+/gi,'_').slice(0,60);
+  const restore=()=>{ document.title=oldTitle; window.removeEventListener('afterprint',restore); closePrintPreview(); };
+  window.addEventListener('afterprint',restore);
+  setTimeout(()=>{ try{ window.print(); }catch(e){ document.title=oldTitle; window.removeEventListener('afterprint',restore); toast('⚠️ Usá el botón "Imprimir / Guardar PDF" de la barra naranja'); } },250);
 }
 
 // ── PDF · solo diagrama (vista en planta) de los Torniquetes/Speedgate ──────
@@ -3251,9 +3291,7 @@ function sgCardHTML(c){
   '</div>';
 }
 
-function sgDrawSchematic(c){
-  const host=document.getElementById('sgSch-'+c.id);
-  if(!host) return;
+function sgSchematicBuild(c){
   const SC=1.5, BW=18, BH=58, padX=28, padY=56;
   const leds=c.leds||[];
   const MODEL_COLORS={'DS212':'#0ea5e9','DS7100':'#a855f7'};
@@ -3331,7 +3369,13 @@ function sgDrawSchematic(c){
       '<span style="display:inline-flex;align-items:center;gap:4px"><svg width="15" height="15" viewBox="0 0 15 15">'+ledIcon(7.5,7.5)+'</svg> LED</span>';
   }
   legend+='</div>';
-  host.innerHTML=p.join('')+legend;
+  return {svg:p.join(''), inner:p.slice(1,-1).join(''), W:W, H:H, legend:legend, nEquip:nEquip, mcol:mcol, faceIcon:faceIcon, ledIcon:ledIcon};
+}
+function sgDrawSchematic(c){
+  const host=document.getElementById('sgSch-'+c.id);
+  if(!host) return;
+  const b=sgSchematicBuild(c);
+  host.innerHTML=b.svg+b.legend;
 }
 
 // ══════════════════════════════════════════════════════════════════════════
