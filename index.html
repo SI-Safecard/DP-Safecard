@@ -1884,8 +1884,8 @@ function generateDiagram(){
 
     const hgId='hg'+Math.random().toString(36).slice(2,8);
     const hg=el('linearGradient',{id:hgId,x1:'0',y1:'0',x2:'1',y2:'0'});
-    hg.appendChild(el('stop',{offset:'0%','stop-color':s.color}));
-    hg.appendChild(el('stop',{offset:'100%','stop-color':s.color+'cc'}));
+    hg.appendChild(el('stop',{offset:'0%','stop-color':s.color+'66'}));
+    hg.appendChild(el('stop',{offset:'100%','stop-color':s.color+'33'}));
     defs.appendChild(hg);
 
     g.appendChild(el('rect',{x:s.x,y:s.y,width:s.w,height:LBL_H,fill:`url(#${hgId})`,'clip-path':`url(#${cpId})`}));
@@ -1894,7 +1894,7 @@ function generateDiagram(){
     const icon=el('text',{x:s.x+16,y:s.y+LBL_H/2,'text-anchor':'middle','dominant-baseline':'middle','font-size':'13','font-family':'system-ui,sans-serif'});
     icon.textContent=s.isBase?'⚙️':(s.isSG?'🚪':'📍'); g.appendChild(icon);
 
-    const lt=el('text',{x:s.x+32,y:s.y+LBL_H/2,'text-anchor':'start','font-size':'13','font-family':'system-ui,-apple-system,sans-serif','font-weight':'700',fill:'white','dominant-baseline':'middle'});
+    const lt=el('text',{x:s.x+32,y:s.y+LBL_H/2,'text-anchor':'start','font-size':'13','font-family':'system-ui,-apple-system,sans-serif','font-weight':'700',fill:'#000','dominant-baseline':'middle'});
     lt.textContent=s.name; g.appendChild(lt);
 
     lSect.appendChild(g);
@@ -1905,8 +1905,8 @@ function generateDiagram(){
     allSections.forEach(s=>{
       if(!s.groupLabel) return;
       const bw=Math.max(160, Math.min(340, s.groupLabel.length*9+40));
-      lBg.appendChild(el('rect',{x:boxX, y:s.bannerY, width:bw, height:GROUP_BANNER_H, rx:8, fill:'#1e293b'}));
-      const bt=el('text',{x:boxX+14, y:s.bannerY+GROUP_BANNER_H/2, 'text-anchor':'start','dominant-baseline':'middle','font-size':'13','font-family':'system-ui,-apple-system,sans-serif','font-weight':'800',fill:'#fff'});
+      lBg.appendChild(el('rect',{x:boxX, y:s.bannerY, width:bw, height:GROUP_BANNER_H, rx:8, fill:'#e2e8f0', stroke:'#1e293b','stroke-width':'1.5'}));
+      const bt=el('text',{x:boxX+14, y:s.bannerY+GROUP_BANNER_H/2, 'text-anchor':'start','dominant-baseline':'middle','font-size':'13','font-family':'system-ui,-apple-system,sans-serif','font-weight':'800',fill:'#000'});
       bt.textContent=s.groupLabel; lBg.appendChild(bt);
     });
   }
@@ -2016,7 +2016,7 @@ function generateDiagram(){
     } else { pos = equipPos[nd.pid]||''; }
     if(pos){
       const txt = pos.length>20 ? pos.slice(0,19)+'…' : pos;
-      const lt=el('text',{x:x+NW/2,y:y-6,'text-anchor':'middle','font-size':'8.5','font-family':'system-ui,-apple-system,sans-serif',fill:'#b45309','font-weight':'700'});
+      const lt=el('text',{x:x+NW/2,y:y-6,'text-anchor':'middle','font-size':'8.5','font-family':'system-ui,-apple-system,sans-serif',fill:'#000','font-weight':'700'});
       lt.textContent=txt; g.appendChild(lt);
     }
     if(nd.dir){
