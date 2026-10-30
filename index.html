@@ -992,8 +992,11 @@ const BASE_KEYS=new Set(['internet','servidor_local_v2','servidor_local','backup
 const SPEEDGATE_KEYS=new Set(['speedgate','speedgate_doble','torniquete_safecard','torniquete_estadio','torniquete_skidata']);
 // Torniquetes (no Speedgate): cada "paso" de la configuración = 1 torniquete
 const TQ_MODELS={'Torniq. Safecard':'torniquete_safecard','Torniq. Estadio':'torniquete_estadio','Torniq. Skidata':'torniquete_skidata'};
+function sgDims(c){ const m=(c&&c.modelo)||''; if(m==='Torniq. Skidata') return {l:45}; if(m==='Torniq. Estadio') return {l:140,a:220}; return {l:130,a:100}; }
+function sgDimsTxt(c,sep){ const d=sgDims(c), p=[]; if(d.l) p.push('Largo: '+d.l+' cm'); if(d.a) p.push('Altura: '+d.a+' cm'); return p.join(sep||'  ·  '); }
 function sgIsTq(c){ return !!TQ_MODELS[(c&&c.modelo)||'']; }
 function tqQty(model){ let n=0; const key=TQ_MODELS[model]; const ad=o=>Object.entries(o||{}).forEach(([k,q])=>{ if(baseKey(k)===key) n+=q; }); servers.forEach(sv=>ad(sv.items)); sectors.forEach(s=>ad(s.items)); return n; }
+function tqAll(){ return Object.keys(TQ_MODELS).reduce((a,m)=>a+tqQty(m),0); }
 function tqUsed(model){ return sgConfigs.filter(c=>c.modelo===model).reduce((a,c)=>a+(c.pasos||1),0); }
 // Cantidad de un equipo de infraestructura sumada across TODOS los servidores (Base de Red)
 function svQty(key){ return servers.reduce((a,sv)=>a+((sv.items||{})[key]||0),0); }
@@ -2212,7 +2215,7 @@ function buildTorniquetesDiagramPrint(){
       body+='<div class="tdpage">'
         +(g.sv?('<div class="tdsrv">🖥️ '+_pesc(g.sv.name)+'</div>'):'')
         +'<div class="tdh">Configuración '+idx+' · '+_pesc(c.modelo||'DS212')+'</div>'
-        +'<div class="tdsub">Pasos: '+c.pasos+' · Ancho total: '+ancho+' cm · Largo/Altura: 140 cm / 100 cm</div>'
+        +'<div class="tdsub">Pasos: '+c.pasos+' · Ancho total: '+ancho+' cm'+(sgDimsTxt(c,' · ')?(' · '+sgDimsTxt(c,' · ')):'')+'</div>'
         +'<div class="tdsvbox">'+sch.innerHTML+'</div>'
         +'</div>';
     });
@@ -2527,12 +2530,14 @@ function exportExcel(){
     if(sgIsTq(c)){
       rows3.push(['Cantidad de torniquetes', String(c.pasos)]);
       rows3.push(['Ancho total (cm)', String(k.ancho)]);
+      if(sgDims(c).l) rows3.push(['Largo del equipo (cm)', String(sgDims(c).l)]);
+      if(sgDims(c).a) rows3.push(['Altura del equipo (cm)', String(sgDims(c).a)]);
     } else {
     rows3.push(['Cantidad de pasos', String(c.pasos)]);
     rows3.push(['Ancho de cada paso (cm)', c.widths.join(' - ')]);
     rows3.push(['Cantidad de cuerpos', String(k.cuerpos)]);
     rows3.push(['Ancho total (cm)', String(k.ancho)]);
-    rows3.push(['Largo del equipo (cm)', '140']);
+    rows3.push(['Largo del equipo (cm)', '130']);
     rows3.push(['Altura del equipo (cm)', '100']);
     rows3.push(['Plano correspondiente', planName]);
     }
@@ -2580,7 +2585,7 @@ function exportExcel(){
     ['PVC 20 mm (m)', tech.pvc20||'—'],
     ['PVC 25 mm (m)', tech.pvc25||'—'],
     ['Soterrado (m)', tech.soterrado||'—'],
-    ['Pasadas de losa 25 mm (Speedgate)', (sgSimplesQty()+sgDoblesQty())||'—'],
+    ['Pasadas de losa 25 mm (Speedgate)', (sgSimplesQty()+sgDoblesQty()+tqAll())||'—'],
     [],
   ];
   if((v('p_occ')==='Safecard') && (tech.oocc||'').trim()){
@@ -3163,7 +3168,7 @@ function sgSetPerim(id,val){ const c=sgGet(id); if(c){ c.perim=val; renderSG(); 
 function sgSetPerimTipo(id,val){ const c=sgGet(id); if(c){ c.perimTipo=val; renderSG(); } }
 
 function sgCalc(c){
-  if(sgIsTq(c)){ const n=c.pasos; return { cuerpos:n, ancho:n*18+Math.max(0,n-1)*60, seq:'', plan:null }; }
+  if(sgIsTq(c)){ const n=c.pasos; return { cuerpos:n, ancho:(c.modelo==='Torniq. Estadio')?n*124:n*(18+50), seq:'', plan:null }; }
   const cuerpos=c.pasos+1;
   const ancho=cuerpos*18+c.widths.reduce((a,b)=>a+b,0);
   const seq=c.widths.join('-');
@@ -3301,7 +3306,7 @@ function sgCardHTML(c){
     '<div class="fg" style="margin-bottom:10px"><div class="f"><label>'+(isTq?'Cantidad de torniquetes':'Cantidad de pasos')+'</label><div class="tg">'+pasosSel+'</div></div></div>'+
     '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">'+pasoRows+'</div>'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">'+
-      sgChip('Modelo',c.modelo||'DS212')+(isTq?sgChip('Cantidad',c.pasos):(sgChip('Cuerpos',k.cuerpos)+sgChip('Ancho total',k.ancho+' cm')+sgChip('Largo','140 cm')+sgChip('Altura','100 cm')))+sgChip('Face ID',faceTxt)+sgChip('LED',ledTxt)+
+      sgChip('Modelo',c.modelo||'DS212')+(isTq?(sgChip('Cantidad',c.pasos)+sgChip('Ancho total',k.ancho+' cm')+(sgDims(c).l?sgChip('Largo',sgDims(c).l+' cm'):'')+(sgDims(c).a?sgChip('Altura',sgDims(c).a+' cm'):'')):(sgChip('Cuerpos',k.cuerpos)+sgChip('Ancho total',k.ancho+' cm')+sgChip('Largo','130 cm')+sgChip('Altura','100 cm')))+sgChip('Face ID',faceTxt)+sgChip('LED',ledTxt)+
     '</div>'+
     '<div style="font-size:11px;font-weight:600;color:'+planColor+';margin-bottom:10px">'+planTxt+'</div>'+
     '<div style="background:var(--in);border:1px solid var(--bd);border-radius:8px;padding:10px;overflow-x:auto;margin-bottom:12px">'+
@@ -3345,33 +3350,53 @@ function sgSchematicBuild(c){
     return g; };
 
   if(sgIsTq(c)){
-    const n=c.pasos, GAP=60, tW=Math.max(n*BW+(n-1)*GAP,90)*SC+padX*2, tH=BH*SC+padY*2+28;
+    const n=c.pasos, isEst=c.modelo==='Torniq. Estadio', UW=isEst?124:BW, GAP=isEst?0:50, totCm=n*(UW+GAP), tW=Math.max(totCm*SC+padX*2,520), tH=BH*SC+padY*2+40, ox=(tW-totCm*SC)/2;
     const tcol='#E8541A', q=[];
-    const bxs=[]; for(let i=0;i<n;i++) bxs.push(padX+i*(BW+GAP)*SC);
-    const tx0=(tW-(n*BW+(n-1)*GAP)*SC)/2; // centrado si n pequeño
-    for(let i=0;i<n;i++) bxs[i]=tx0+i*(BW+GAP)*SC;
+    const bxs=[]; for(let i=0;i<n;i++) bxs.push(ox+i*(UW+GAP)*SC);
     q.push('<rect x="'+(tW/2-70)+'" y="5" width="140" height="17" rx="8.5" fill="'+tcol+'"/>');
     q.push('<text x="'+(tW/2)+'" y="17" text-anchor="middle" font-size="10" font-weight="800" fill="#ffffff" font-family="system-ui">'+sgEsc(c.modelo)+'</text>');
     q.push('<text x="'+(tW/2)+'" y="40" text-anchor="middle" font-size="11" font-weight="700" fill="#ef4444" font-family="system-ui">▽ Salida</text>');
     q.push('<text x="'+(tW/2)+'" y="'+(tH-6)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#22c55e" font-family="system-ui">△ Entrada</text>');
-    for(let i=0;i<n-1;i++){
+    // zonas de paso: una a cada lado de cada torniquete (n+1 zonas, las internas se comparten)
+    for(let i=0;i<n && !isEst;i++){
       const px=bxs[i]+bw, pw=GAP*SC;
       q.push('<rect x="'+px+'" y="'+yTop+'" width="'+pw+'" height="'+(BH*SC)+'" rx="4" fill="#E8541A0D" stroke="#E8541A40" stroke-width="1" stroke-dasharray="3,3"/>');
       q.push('<text x="'+(px+pw/2)+'" y="'+(yTop-6)+'" text-anchor="middle" font-size="9" font-weight="700" fill="#E8541A" font-family="DM Mono,monospace">'+GAP+'</text>');
+      q.push('<text x="'+(px+pw/2)+'" y="'+(yMid+3)+'" text-anchor="middle" font-size="8" fill="#7A8FA6" font-family="system-ui">Paso</text>');
     }
     for(let i=0;i<n;i++){
-      const bx=bxs[i], cx=bx+bw/2;
-      q.push('<rect x="'+bx+'" y="'+yTop+'" width="'+bw+'" height="'+(BH*SC)+'" rx="9" fill="#1E2E40" stroke="'+tcol+'" stroke-width="1.5"/>');
+      const bx=bxs[i], cx=bx+(isEst?UW*SC:bw)/2;
+      const bxR=bx+bw;
+      if(isEst){
+        const ew=UW*SC, ecy=yMid, rr=BH*SC*0.42;
+        q.push('<rect x="'+bx+'" y="'+yTop+'" width="'+ew+'" height="'+(BH*SC)+'" rx="14" fill="#F1F5F9" stroke="'+tcol+'" stroke-width="1.5"/>');
+        q.push('<circle cx="'+cx+'" cy="'+ecy+'" r="'+rr.toFixed(1)+'" fill="none" stroke="#94a3b8" stroke-width="1.4" stroke-dasharray="4,3"/>');
+        [45,135,225,315].forEach(a=>{ const r=a*Math.PI/180; q.push('<line x1="'+cx+'" y1="'+ecy+'" x2="'+(cx+Math.cos(r)*rr).toFixed(1)+'" y2="'+(ecy+Math.sin(r)*rr).toFixed(1)+'" stroke="#64748b" stroke-width="2.6" stroke-linecap="round"/>'); });
+        q.push('<rect x="'+(cx-8)+'" y="'+(ecy-8)+'" width="16" height="16" rx="4" fill="#1E2E40"/>');
+        q.push('<text x="'+(bx+4)+'" y="'+(yTop+12)+'" font-size="8" fill="#7A8FA6" font-family="DM Mono,monospace">'+(i+1)+'</text>');
+        q.push('<text x="'+cx+'" y="'+(yTop+BH*SC+10)+'" text-anchor="middle" font-size="6.8" font-weight="700" fill="'+tcol+'" font-family="system-ui">TORNIQUETE '+(i+1)+'</text>');
+        if(c.faceids[i]) q.push(faceIcon(bx+14,yTop+14));
+        if(leds[i]) q.push(ledIcon(bx+ew-14,yTop+14));
+        continue;
+      }
+      if(false){
+        const rr=GAP*SC*0.48, rcx=bxR+GAP*SC/2, rcy=yMid;
+        q.push('<circle cx="'+rcx+'" cy="'+rcy+'" r="'+rr.toFixed(1)+'" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="4,3"/>');
+        [0,90,180,270].forEach(a=>{ const r=(a+45)*Math.PI/180; q.push('<line x1="'+rcx+'" y1="'+rcy+'" x2="'+(rcx+Math.cos(r)*rr).toFixed(1)+'" y2="'+(rcy+Math.sin(r)*rr).toFixed(1)+'" stroke="#94a3b8" stroke-width="2.6" stroke-linecap="round"/>'); });
+        q.push('<circle cx="'+rcx+'" cy="'+rcy+'" r="4" fill="#64748b"/>');
+      } else {
+        [-35,0,35].forEach(a=>{ const r=a*Math.PI/180, L=40*SC, x2=bxR+Math.cos(r)*L, y2=yMid+Math.sin(r)*L; q.push('<line x1="'+bxR+'" y1="'+yMid+'" x2="'+x2.toFixed(1)+'" y2="'+y2.toFixed(1)+'" stroke="#94a3b8" stroke-width="2.2" stroke-linecap="round"/>'); });
+      }
+      const isSk=c.modelo==='Torniq. Skidata', bH=isSk?BH*SC*0.55:BH*SC, bY=yMid-bH/2;
+      q.push('<rect x="'+bx+'" y="'+bY+'" width="'+bw+'" height="'+bH+'" rx="9" fill="#1E2E40" stroke="'+tcol+'" stroke-width="1.5"/>');
       q.push('<text x="'+cx+'" y="'+(yTop-6)+'" text-anchor="middle" font-size="8" fill="#7A8FA6" font-family="DM Mono,monospace">18</text>');
       q.push('<circle cx="'+cx+'" cy="'+yMid+'" r="2.4" fill="'+tcol+'"/>');
-      // brazos del torniquete (trípode)
-      [-50,0,50].forEach(a=>{ const r=a*Math.PI/180, x2=bx+bw+Math.cos(r)*16, y2=yMid+Math.sin(r)*16; q.push('<line x1="'+(bx+bw)+'" y1="'+yMid+'" x2="'+x2.toFixed(1)+'" y2="'+y2.toFixed(1)+'" stroke="#94a3b8" stroke-width="2.2" stroke-linecap="round"/>'); });
       q.push('<text x="'+cx+'" y="'+(yTop+BH*SC+10)+'" text-anchor="middle" font-size="6.8" font-weight="700" fill="'+tcol+'" font-family="system-ui">TORNIQUETE '+(i+1)+'</text>');
       let top=0, bot=0;
-      if(c.faceids[i]){ q.push(faceIcon(cx,yTop+11+top*13)); top++; q.push(faceIcon(cx,yTop+BH*SC-11-bot*13)); bot++; }
-      if(leds[i]){ q.push(ledIcon(cx,yTop+11+top*13)); q.push(ledIcon(cx,yTop+BH*SC-11-bot*13)); }
+      if(c.faceids[i]){ q.push(faceIcon(cx,bY+11+top*13)); top++; q.push(faceIcon(cx,bY+bH-11-bot*13)); bot++; }
+      if(leds[i]){ q.push(ledIcon(cx,bY+11+top*13)); q.push(ledIcon(cx,bY+bH-11-bot*13)); }
     }
-    q.push('<text x="'+(tW/2)+'" y="'+(yTop+BH*SC+24)+'" text-anchor="middle" font-size="9" fill="#7A8FA6" font-family="DM Mono,monospace">'+n+' torniquete(s)  ·  Ancho total: '+(n*BW+(n-1)*GAP)+' cm</text>');
+    q.push('<text x="'+(tW/2)+'" y="'+(yTop+BH*SC+24)+'" text-anchor="middle" font-size="9" fill="#7A8FA6" font-family="DM Mono,monospace">Ancho total: '+totCm+' cm'+(sgDimsTxt(c)?('  ·  '+sgDimsTxt(c)):'')+'</text>');
     const tn=c.faceids.filter(Boolean).length+leds.filter(Boolean).length;
     let tleg='<div style="display:flex;gap:14px;justify-content:center;align-items:center;margin-top:6px;font-size:9px;color:var(--mt);flex-wrap:wrap"><span><b style="color:#E8541A">'+sgEsc(c.modelo)+'</b></span>';
     if(tn>0) tleg+='<span style="display:inline-flex;align-items:center;gap:4px"><svg width="15" height="15" viewBox="0 0 15 15">'+faceIcon(7.5,7.5)+'</svg> Face ID</span><span style="display:inline-flex;align-items:center;gap:4px"><svg width="15" height="15" viewBox="0 0 15 15">'+ledIcon(7.5,7.5)+'</svg> LED</span>';
@@ -3421,7 +3446,7 @@ function sgSchematicBuild(c){
       p.push(t==='face' ? faceIcon(cx,yy) : ledIcon(cx,yy));
     });
   });
-  p.push('<text x="'+(W/2)+'" y="'+(yTop+BH*SC+24)+'" text-anchor="middle" font-size="9" fill="#7A8FA6" font-family="DM Mono,monospace">Ancho total: '+totalCm+' cm  ·  Largo: 140 cm  ·  Altura: 100 cm</text>');
+  p.push('<text x="'+(W/2)+'" y="'+(yTop+BH*SC+24)+'" text-anchor="middle" font-size="9" fill="#7A8FA6" font-family="DM Mono,monospace">Ancho total: '+totalCm+' cm  ·  Largo: 130 cm  ·  Altura: 100 cm</text>');
   p.push('</svg>');
   let legend='<div style="display:flex;gap:14px;justify-content:center;align-items:center;margin-top:6px;font-size:9px;color:var(--mt);flex-wrap:wrap">'+
     '<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:3px;background:'+mcol+';display:inline-block"></span> <b style="color:'+mcol+'">'+(c.modelo||'DS212')+'</b></span>'+
@@ -3687,7 +3712,7 @@ function renderTech(){
   const sv=(id,val)=>{ const e=document.getElementById(id); if(e && e.value!==val) e.value=val; };
   sv('t_utp',tech.utp); sv('t_fibra',tech.fibra); sv('t_c220',tech.c220||''); sv('t_emt',tech.emt); sv('t_emtmed',tech.emtMed||''); sv('t_pvc20',tech.pvc20||''); sv('t_pvc25',tech.pvc25||''); sv('t_soterrado',tech.soterrado||''); sv('t_oocc',tech.oocc||''); updOOCC();
   sv('t_notas',tech.notas);
-  const sgU=sgSimplesQty()+sgDoblesQty(); sv('t_sg_units', String(sgU)); sv('t_losa25', String(sgU));
+  const sgU=sgSimplesQty()+sgDoblesQty()+tqAll(); sv('t_sg_units', String(sgU)); sv('t_losa25', String(sgU));
   renderTechBaseRed();
   renderTechSectorPhotos();
   renderPhotos();
@@ -3797,8 +3822,8 @@ function printSpeedgate(){
     const cuerpos=sgCalc(c).cuerpos, ancho=sgCalc(c).ancho;
     const faces=c.faceids.filter(Boolean).length, leds=(c.leds||[]).filter(Boolean).length;
     let info = sgIsTq(c)
-      ? _pKV('Modelo', c.modelo)+_pKV('Cantidad de torniquetes', c.pasos)+_pKV('Ancho total', ancho+' cm')+_pKV('Face ID / LED', faces+' unidades / '+leds+' unidades')
-      : _pKV('Modelo', c.modelo||'DS212')+_pKV('Pasos', c.pasos)+_pKV('Cuerpos', cuerpos+' (2 Simple + '+(cuerpos-2)+' Doble)')+_pKV('Ancho total', ancho+' cm')+_pKV('Largo / Altura', '140 cm / 100 cm')+_pKV('Anchos por paso', c.widths.join(' · ')+' cm')+_pKV('Face ID / LED', faces+' pasos / '+leds+' pasos');
+      ? _pKV('Modelo', c.modelo)+_pKV('Cantidad de torniquetes', c.pasos)+_pKV('Ancho total', ancho+' cm')+(sgDimsTxt(c)?_pKV('Dimensiones', sgDimsTxt(c,' · ')):'')+_pKV('Face ID / LED', faces+' unidades / '+leds+' unidades')
+      : _pKV('Modelo', c.modelo||'DS212')+_pKV('Pasos', c.pasos)+_pKV('Cuerpos', cuerpos+' (2 Simple + '+(cuerpos-2)+' Doble)')+_pKV('Ancho total', ancho+' cm')+_pKV('Largo / Altura', '130 cm / 100 cm')+_pKV('Anchos por paso', c.widths.join(' · ')+' cm')+_pKV('Face ID / LED', faces+' pasos / '+leds+' pasos');
     const cierreP = (c.perim==='Sí')
       ? ('Sí — '+(c.perimM?(c.perimM+' m'):'metraje sin definir')+(c.perimTipo?(' · '+c.perimTipo):' · tipo sin definir'))
       : 'No';
@@ -3812,7 +3837,7 @@ function printSpeedgate(){
 function printTecnico(){
   let out='';
   let g=_pKV('UTP Cat 6 (m)', tech.utp||'—')+_pKV('Fibra óptica (m)', tech.fibra||'—')+_pKV('Cableado 220V (m)', tech.c220||'—')+_pKV('EMT (m)', (tech.emt||'—')+(tech.emtMed?(' · '+tech.emtMed):''))+_pKV('PVC 20 mm (m)', tech.pvc20||'—')+_pKV('PVC 25 mm (m)', tech.pvc25||'—')+_pKV('Soterrado (m)', tech.soterrado||'—');
-  const _sgU=sgSimplesQty()+sgDoblesQty(); if(_sgU>0) g+=_pKV('Pasadas de losa 25 mm (Speedgate)', _sgU+' (1 por Speedgate)');
+  const _sgU=sgSimplesQty()+sgDoblesQty()+tqAll(); if(_sgU>0) g+=_pKV('Pasadas de losa 25 mm (Speedgate)', _sgU+' (1 por equipo)');
   const _occ=(document.getElementById('p_occ')||{}).value||''; if(_occ==='Safecard' && (tech.oocc||'').trim()) g+=_pKV('Obras civiles (Safecard)', (tech.oocc||'').trim());
   out+=_pCard('🛠️ Cableado · Canalización', g);
   const multiServer = servers.length>1;
